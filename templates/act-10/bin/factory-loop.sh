@@ -9,7 +9,7 @@
 #                (--allowedTools is variadic, so it comes before the flags that take one value;
 #                 the prompt is appended last. The list has no spaces because this command is split on spaces.
 #                 This permission set is untested in a real loop.)
-#   Codex:       codex exec --sandbox workspace-write --json
+#   Codex:       codex exec --json -C <repo>   (config: .agents/loop/codex-config.example.toml)
 #   Gemini:      gemini --approval-mode auto_edit -o json -p      (prompt follows -p)
 #   Cursor:      agent -p --force --output-format json
 #
@@ -147,7 +147,7 @@ while true; do
   run_file="$RUNS_DIR/$(date -u +%Y%m%dT%H%M%SZ)-i$iteration.json"
   say "iteration $iteration: $before open tickets, output in $run_file"
 
-  "${HARNESS[@]}" "$PROMPT" > "$run_file" 2> "$run_file.err"
+  "${HARNESS[@]}" "$PROMPT" </dev/null > "$run_file" 2> "$run_file.err"
   code=$?
 
   after=$(open_ids | count_lines)

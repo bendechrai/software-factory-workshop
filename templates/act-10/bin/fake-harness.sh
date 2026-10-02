@@ -8,6 +8,8 @@
 set -u
 prompt="${*: -1}"
 echo "$(date -u +%H:%M:%S) mode=${FAKE_MODE:-noop} prompt=${prompt:0:40}" >> "${FAKE_LOG:?FAKE_LOG not set}"
+if [ -t 0 ]; then kind="tty"; elif [ -z "$(cat)" ]; then kind="empty"; else kind="data"; fi
+echo "stdin=$kind args=$#" >> "$FAKE_LOG.in"
 echo '{"fake":true}'
 
 first_open() {

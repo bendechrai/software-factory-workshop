@@ -84,5 +84,13 @@ check "MAX_FAILURES failed runs in a row end the loop with exit 2 (3 calls)" \
 setup 3; FAKE_MODE=noop run_loop --bogus
 check "unknown argument exits 2 with usage" '(( CODE == 2 )) && has "Usage"'
 
+setup 2; FAKE_MODE=noop MAX_ITERATIONS=1 run_loop
+check "the harness gets /dev/null on stdin (empty, not a tty)" \
+  'grep -q "stdin=empty" "$FAKE_LOG.in"'
+
+setup 2; FAKE_MODE=noop MAX_ITERATIONS=1 HARNESS_CMD="bash $T/bin/fake-harness.sh exec --json -C $T" run_loop
+check "a multi-word HARNESS_CMD with -C <path> passes every word, then the prompt last" \
+  'grep -q "args=5" "$FAKE_LOG.in" && grep -q "prompt=You are the orchestrator" "$FAKE_LOG"'
+
 echo; echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -1,0 +1,28 @@
+# Config for the unattended factory loop with OpenAI Codex CLI through OpenRouter.
+# Copy it to $CODEX_HOME/config.toml (the run command uses ~/.codex-loop).
+#
+# WARNING: the sandbox is OFF (sandbox_mode = "danger-full-access") because
+# Chromium cannot start inside Codex's workspace-write sandbox on macOS, and the
+# loop's checks need a browser. With approval_policy = "never" this means Codex
+# acts with YOUR full user permissions, unattended: it can read, write and
+# delete anything you can, and use the network. Run it only on a machine and
+# account where you accept that.
+#
+# The trust entry at the bottom must name YOUR repo's absolute path. Replace
+# the placeholder below (the run command does this with sed).
+#
+# No secrets here: the key is read from the OPENROUTER_API_KEY environment variable.
+
+model = "openai/gpt-5.6-sol"
+model_provider = "openrouter"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+[model_providers.openrouter]
+name = "OpenRouter"
+base_url = "https://openrouter.ai/api/v1"
+env_key = "OPENROUTER_API_KEY"
+wire_api = "responses"
+
+[projects."<absolute repo path>"]
+trust_level = "trusted"
