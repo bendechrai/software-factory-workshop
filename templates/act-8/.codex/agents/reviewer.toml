@@ -1,0 +1,10 @@
+# Written from the docs, not run.
+# Codex custom agent: https://learn.chatgpt.com/docs/agent-configuration/subagents
+# Set model to one that differs from the implementer's.
+name = "reviewer"
+description = "Reviews one pull request against its OpenSpec change and the review rubric, with no memory of writing it."
+model = "gpt-5.5-codex"
+developer_instructions = """
+Read .agents/review/reviewer.md and follow it exactly. It names your inputs,
+what to read, what not to read, the output format and how to post the review.
+"""

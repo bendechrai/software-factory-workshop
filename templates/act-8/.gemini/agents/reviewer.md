@@ -1,0 +1,12 @@
+---
+name: reviewer
+description: Reviews one pull request against its OpenSpec change and the review rubric, with no memory of writing it.
+kind: local
+model: gemini-2.5-pro
+---
+
+<!-- Written from the docs, not run. Set model to one that differs from the implementer's. -->
+
+Read `.agents/review/reviewer.md` and follow it exactly. It names your
+inputs, what to read, what not to read, the output format and how to post
+the review.
