@@ -1,0 +1,159 @@
+---
+title: "Act 3: gates"
+description: A definition of done, a commit hook that runs in seconds and a push hook that tests the exact commit. The agent can no longer land work that fails the checks.
+sidebar:
+  order: 3
+  label: "Act 3: gates"
+---
+
+import { Tabs, TabItem, Steps, Aside, Code } from '@astrojs/starlight/components';
+import dod from '../../../../../templates/act-3/DEFINITION_OF_DONE.md?raw';
+import preCommit from '../../../../../templates/act-3/.githooks/pre-commit?raw';
+import blockNoVerify from '../../../../../templates/act-3/.agents/hooks/block-no-verify.sh?raw';
+
+**The idea.** Act 2 told the agent what good looks like. Nothing stopped it from committing something else. Gates are the deterministic half of the factory: a commit hook that runs the fast checks in seconds, and a push hook that runs everything against the exact commit being pushed, in a clean export, so a file you forgot to commit cannot make a check pass. There is no hosted CI in this repository. The hooks do that job on your machine, and they run for agents exactly as they run for you.
+
+**Time:** about 75 minutes. 20 for the talk, 45 hands-on, 10 to compare.
+
+## The talk
+
+1. **Instructions are advisory. Hooks are not.** An agent can misread `AGENTS.md`. It cannot misread a non-zero exit code from a git hook. Put the things that must be true in a hook and the things that should be true in the instructions.
+2. **Two speeds.** Before a commit: secrets, typecheck, lint, unit tests. Seconds, so there is never a reason to skip it. Before a push: a clean install, everything again, the build, a dependency audit, a migration replay, and a real browser. Minutes, and it tests the commit, not the working tree.
+3. **A definition of done is a contract the agent reads.** It lists the gates, says who enforces each one, and defines a waiver: a line in the summary that names the gate and the reason. A quiet skip is the one thing it forbids.
+4. **Agents will reach for `--no-verify`.** All of them. So the harness gets one hook of its own: before any shell command, refuse the ones that skip git hooks. This is the only harness-specific piece in the workshop, and it is twelve lines.
+
+## The files
+
+<Code code={dod} lang="md" title="DEFINITION_OF_DONE.md" />
+
+The commit hook. It unsets the git environment variables the hook inherits, because test suites that shell out to git otherwise operate on your real index.
+
+<Code code={preCommit} lang="bash" title=".githooks/pre-commit" />
+
+The push hook calls `bin/preflight.sh` for every commit being pushed. Preflight exports the commit with `git archive`, runs `npm ci`, then verify, build, audit, a migration replay (applying twice must apply nothing the second time) and the browser test, and prints a timing table. Read the whole thing in the [templates folder](https://github.com/bendechrai/software-factory-workshop/tree/main/templates/act-3).
+
+The harness hook that stops an agent skipping the git hooks:
+
+<Code code={blockNoVerify} lang="bash" title=".agents/hooks/block-no-verify.sh" />
+
+## Hands-on
+
+<Steps>
+
+1. **Copy the gate files in.** The template folder has the definition of done, both git hooks, the preflight script, the setup script, the harness hook, a Playwright config and a browser test for hop.
+
+   ```bash
+   cd hop
+   base=https://raw.githubusercontent.com/bendechrai/software-factory-workshop/main/templates/act-3
+   mkdir -p .githooks bin .agents/hooks e2e
+   for f in DEFINITION_OF_DONE.md .githooks/pre-commit .githooks/pre-push bin/preflight.sh bin/setup-git-hooks.sh .agents/hooks/block-no-verify.sh playwright.config.ts e2e/hop.spec.ts; do
+     curl -fsSL "$base/$f" -o "$f"
+   done
+   curl -fsSL "$base/AGENTS-additions.md" | sed '1d' >> AGENTS.md
+   bin/setup-git-hooks.sh
+   ```
+
+2. **Wire the harness hook.** This is the one step that differs per harness.
+
+   <Tabs syncKey="harness">
+     <TabItem label="Claude Code">
+       ```bash
+       mkdir -p .claude
+       curl -fsSL "$base/.claude/settings.json" -o .claude/settings.json
+       ```
+       It registers a `PreToolUse` hook on the Bash tool that runs the script above. Restart your harness so it picks the setting up.
+     </TabItem>
+     <TabItem label="Codex CLI">
+       Create `.codex/hooks.json`:
+       ```json
+       { "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [
+         { "type": "command", "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-no-verify.sh\"", "timeout": 10 }
+       ] } ] } }
+       ```
+       Project hooks load when the project is trusted. Written from the Codex docs; not run while building this guide.
+     </TabItem>
+     <TabItem label="Gemini CLI">
+       Add to `.gemini/settings.json`:
+       ```json
+       { "hooks": { "BeforeTool": [ { "matcher": "run_shell_command", "hooks": [
+         { "name": "block-no-verify", "type": "command", "command": "$GEMINI_PROJECT_DIR/.agents/hooks/block-no-verify.sh", "timeout": 10000 }
+       ] } ] } }
+       ```
+       Gemini's hook input has a different JSON shape, so adapt the `python3` line in the script to read the command from `tool_input.command`. Written from the Gemini docs; not run while building this guide.
+     </TabItem>
+     <TabItem label="Cursor">
+       Create `.cursor/hooks.json`:
+       ```json
+       { "version": 1, "hooks": { "beforeShellExecution": [ { "command": ".agents/hooks/block-no-verify.sh" } ] } }
+       ```
+       Cursor's hook input has a different JSON shape, so adapt the `python3` line in the script. Written from the Cursor docs; not run while building this guide.
+     </TabItem>
+   </Tabs>
+
+3. **Ask the agent to finish the wiring.** The browser test needs Playwright in the project and a script to run it.
+
+   ```text
+   Install the gates. Read DEFINITION_OF_DONE.md. Add @playwright/test as a dev dependency and an `npm run e2e` script that runs it; the config and test are already in playwright.config.ts and e2e/hop.spec.ts. Add test-results/ and playwright-report/ to .gitignore. Then prove the gates work without committing: run `.githooks/pre-commit` directly and `bin/preflight.sh HEAD` directly, and show me the tail of each. Then commit.
+   ```
+
+   <Aside type="tip" title="What you should see">
+   The direct run of preflight **fails** at the e2e gate with `Missing script: "e2e"`. That is correct. Preflight tests `HEAD`, and `HEAD` is still your act 2 commit, which has no `e2e` script. The uncommitted files in your working tree cannot make it pass. After the commit, `bin/preflight.sh HEAD` passes, with a timing table that looks like this on the demo app:
+
+   ```text
+   PREFLIGHT PASSED - bdf4ee5 is safe to push
+   Timing
+     install      ok      1s
+     verify       ok      3s
+     build        ok      0s
+     audit        ok      1s
+     migrations   ok      0s
+     e2e          ok      3s
+   ```
+   </Aside>
+
+4. **Try to commit a secret.** Create a file with a token-shaped string in it and commit it.
+
+   ```bash
+   printf 'GITHUB_TOKEN=ghp_q7Hd2mZp9Lk4Xs1Vb8Nw3Rt6Yu0Cj5Fg2Aa\n' > notes.txt
+   git add notes.txt && git commit -m "Add notes"
+   ```
+
+   The hook refuses it:
+
+   ```text
+   WRN leaks found: 1
+   pre-commit: FAIL - gitleaks found something that looks like a secret in the staged changes
+   ```
+
+   Clean up with `git rm --cached notes.txt && rm notes.txt`.
+
+   <Aside type="note" title="Why not an AWS key?">
+   The obvious test string, `AKIAIOSFODNN7EXAMPLE`, is AWS's documented example key, and gitleaks allowlists it on purpose. The demo build tried it first and the commit went straight through. Use a string that is not on an allowlist.
+   </Aside>
+
+5. **Try the harness hook.** Ask the agent to run `git commit --no-verify -m test`. It should report that the command was blocked before it ran. If your harness does not support a before-command hook, this guard is missing and the instruction in `AGENTS.md` is all you have.
+
+6. **Add a feature under the gates.**
+
+   ```text
+   Add a way to delete a link. A small Delete button on each row of the table on the home page, which removes the link after the browser's confirm dialog. Deleting a link that does not exist returns 404. Extend the browser test to cover it.
+   ```
+
+   Watch the commit. The hook output appears in the agent's transcript. Then tag.
+
+   ```bash
+   bin/preflight.sh HEAD
+   git tag act-3
+   ```
+
+</Steps>
+
+## What you see
+
+On the demo app the feature landed in one commit, through three layers and four kinds of test: the service against a real in-memory database, the action against a fake service, the HTTP layer, and a browser test that accepts the confirm dialog and checks the row is gone. The commit hook ran 18 unit tests in under a second. Preflight ran everything, in a clean export, in about ten seconds.
+
+Nothing about that required you to read the diff. That is the point of a gate: you can now spend your attention on whether the feature is right, because whether it is broken has already been answered.
+
+## What you take into act 4
+
+The agent builds your way and cannot land broken work. What it builds is still decided one prompt at a time, by you, in your head. Act 4 writes it down first.
