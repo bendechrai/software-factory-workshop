@@ -1,0 +1,220 @@
+---
+title: "Act 10: unattended"
+description: A small loop restarts the orchestrator in a fresh session each time, and a set of guards decides when it stops. You come back to merged PRs, a drained board, a log and a cost.
+sidebar:
+  order: 10
+  label: "Act 10: unattended"
+---
+
+import { Steps, Code, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import loopPrompt from '../../../../../templates/act-10/.agents/loop/prompt.md?raw';
+import loopScript from '../../../../../templates/act-10/bin/factory-loop.sh?raw';
+
+**The idea.** The factory runs without you at the keyboard. A small loop restarts the orchestrator in a fresh session each time. Each session has fresh context, and the state lives on disk: the board, the specs and git. A set of guards decides when the loop stops. You come back to merged PRs, a drained board, a log and a cost.
+
+**Time:** about 60 minutes.
+
+## The talk
+
+1. **The Ralph loop.** Geoffrey Huntley's idea, at [ghuntley.com/ralph](https://ghuntley.com/ralph/), is very small: give an agent the same prompt, again and again, with fresh context each time, and keep the state in files. Our loop is that, with guards. Each iteration starts a new headless session with `.agents/loop/prompt.md`. There is no `--continue` and no `--resume`. The agent re-reads the board and the repo, does one change, and ends.
+
+2. **Why fresh sessions beat one long one.** A long session fills up with old attempts, dead ends and stale facts. It gets slower and worse. This is context rot. A fresh session reads only what is true now. Anything that must survive goes where the next session will find it: a ticket comment, a spec, a commit.
+
+3. **Four failure modes, and the guard for each.**
+
+   | Failure mode | What happens | The guard |
+   |---|---|---|
+   | Runaway cost | The loop never ends, or one run spends without limit | An iteration cap, a time cap and a per-run budget |
+   | Thrashing | The agent retries a ticket it cannot do | The same ticket blocked twice in a row exits with code 1, for a human |
+   | Context rot | A long session gets worse as it fills | A fresh session each iteration |
+   | Silent wrong work | Green checks, wrong result | The gates, the evidence and the reviewer from the earlier acts |
+
+   The last one is why this act comes last. No guard in the loop can tell whether the work is right. The orchestrate skill does that: it checks every report itself and has every PR reviewed on a different model. The push hook runs the full preflight. The loop never merges around those gates and never uses `--no-verify`. If you skipped those acts, do not run this loop.
+
+4. **The stop file.** `touch .agents/loop/STOP` ends the loop before the next iteration. You do not have to find the process. The run in progress finishes first. Remove the file before the next run, or the loop exits at once.
+
+5. **The two-tier rule.** This comes from the author's holodeck project. Never make the factory the only way to change the factory. The loop, the skill and the board are the fast path. The manual path must keep working beside them. A person can edit, run `npm run verify`, commit and push with no agent and no loop. So the loop changes product code through tickets and PRs, and changes to the loop itself are made by a person.
+
+6. **Cost.** An unattended loop is where cost gets away from you. Claude Code has a per-run budget flag, `--max-budget-usd`, and the default command uses it with a budget of $5 a run. The other harnesses have no such flag in this loop, so the iteration and time caps are your only control: keep `MAX_ITERATIONS` small. When the loop ends it prints the ledger command for its own time window. You run it and read the cost.
+
+## The files
+
+The prompt is two short paragraphs. The first sends the session to the orchestrate skill and limits it to one change a run. The second is the author's line from act 9.
+
+<Code code={loopPrompt} lang="md" title=".agents/loop/prompt.md" />
+
+The loop is one bash script. It checks the guards before every iteration, runs the harness with the prompt as the last argument, writes a log line, and prints the ledger hint when it ends.
+
+<Code code={loopScript} lang="bash" title="bin/factory-loop.sh" />
+
+Three more files come with it. `.agents/loop/README.md` explains each guard and exit code. `bin/fake-harness.sh` is a stand-in harness that calls no model. `bin/factory-loop.test.sh` drives the loop with the fake harness and proves every guard. All five are in `templates/act-10/` in the workshop repository.
+
+## Hands-on
+
+Use your `hop` repository from act 9.
+
+<Steps>
+
+1. **Copy the templates in.** Take everything in `templates/act-10/` and keep the paths: `bin/factory-loop.sh`, `bin/fake-harness.sh`, `bin/factory-loop.test.sh`, `.agents/loop/prompt.md` and `.agents/loop/README.md`. Add these three lines to `.gitignore`, then commit:
+
+   ```text
+   .agents/loop/runs/
+   .agents/loop/STOP
+   .agents/loop/loop.log
+   ```
+
+2. **Read the prompt.** Open `.agents/loop/prompt.md`. It is the whole instruction the loop gives each fresh session. Everything else it needs, it must find on the board and in the repo.
+
+3. **Dry run.** This shows the settings, checks the guards and calls nothing. Run it first, every time.
+
+   ```bash
+   bin/factory-loop.sh --dry-run
+   ```
+
+4. **Test the guards against the fake harness.** No model is called, so this costs nothing.
+
+   ```bash
+   bash bin/factory-loop.test.sh
+   ```
+
+   You should see 13 lines that start with PASS, and `13 passed, 0 failed` at the end. They are listed in the next section.
+
+5. **Propose a small change and import its tickets.** Pick something small, such as a tiny addition to the home page. Use the `openspec-propose` flow, run `openspec validate <change> --strict`, then `agentboard import-change <change> --as orch`. Keep it to one or two task groups. You own the spec, as in act 9.
+
+   <Aside type="caution" title="Read this before the next step">
+   When this guide was built, the loop and every guard were tested only against the fake harness. The loop has not yet been run against a real harness from start to finish. The presenter runs it live. The `HARNESS_CMD` lines below for all four harnesses were written from their docs, not run.
+
+   The reason is simple. The guide was built inside one harness session, and starting a harness inside itself was deliberately avoided. So the next step is the first real run for you and for the presenter. Keep the limits small, watch the first iteration, and keep the stop file in mind.
+   </Aside>
+
+6. **Run the real loop with your harness.** Keep the limits small for a first run. The default command is Claude Code, so with Claude Code you only need the limits:
+
+   ```bash
+   MAX_ITERATIONS=3 MAX_MINUTES=60 bin/factory-loop.sh
+   ```
+
+   For another harness, set `HARNESS_CMD`. The prompt is added as the last argument, so a prompt flag, if there is one, must come last.
+
+   <Tabs>
+     <TabItem label="Claude Code">
+       ```bash
+       HARNESS_CMD="claude -p --permission-mode acceptEdits --output-format json --max-budget-usd 5" MAX_ITERATIONS=3 bin/factory-loop.sh
+       ```
+       This is the default. It is the only one with a per-run budget flag.
+     </TabItem>
+     <TabItem label="Codex CLI">
+       ```bash
+       HARNESS_CMD="codex exec --sandbox workspace-write --json" MAX_ITERATIONS=3 bin/factory-loop.sh
+       ```
+       Codex takes the prompt as a plain argument. Its `-p` means profile, so it is not used here.
+     </TabItem>
+     <TabItem label="Gemini CLI">
+       ```bash
+       HARNESS_CMD="gemini --approval-mode auto_edit -o json -p" MAX_ITERATIONS=3 bin/factory-loop.sh
+       ```
+       Gemini's `-p` takes the prompt as its value, so it goes last.
+     </TabItem>
+     <TabItem label="Cursor">
+       ```bash
+       HARNESS_CMD="agent -p --force --output-format json" MAX_ITERATIONS=3 bin/factory-loop.sh
+       ```
+       Without `--force`, Cursor only proposes changes and does not write them.
+     </TabItem>
+   </Tabs>
+
+   Run `agentboard serve` beside it and watch the board. Note the time the loop started.
+
+7. **Stop it with the STOP file.** From another terminal:
+
+   ```bash
+   touch .agents/loop/STOP
+   ```
+
+   The run in progress finishes, and the loop ends before the next one. Remove the file afterwards: `rm .agents/loop/STOP`. If a run was cut off by Ctrl-c, run `agentboard health` to find tickets left claimed.
+
+8. **Run the ledger for the loop window.** The loop printed the command when it ended. Run it from the workshop repository, with your project directory and the loop's start time:
+
+   ```bash
+   node tools/ledger/ledger.mjs --project ~/.claude/projects/<project dir> --since <ISO time the loop started> --by agent --no-cache
+   ```
+
+9. **Tag it.** `git tag act-10`.
+
+</Steps>
+
+## What you see
+
+### The test results
+
+`bash bin/factory-loop.test.sh` printed this when the guide was built, with the fake harness:
+
+| # | Result | What it proves |
+|---|---|---|
+| 1 | PASS | drains 3 tickets, then exits 0 with "board empty" after 3 harness calls |
+| 2 | PASS | logs one `loop.log` line and one `runs/` file per iteration |
+| 3 | PASS | prints the ledger cost hint |
+| 4 | PASS | stops at `MAX_ITERATIONS` with a no-op harness (2 calls, exit 0) |
+| 5 | PASS | stops on the STOP file the harness created (1 call, exit 0) |
+| 6 | PASS | does not start at all when STOP already exists (0 calls) |
+| 7 | PASS | exits 1 when the same ticket stays blocked for two iterations (2 calls) |
+| 8 | PASS | respects `MAX_MINUTES` (exit 0, stopped well before 50 iterations) |
+| 9 | PASS | exits at once when the board starts empty (0 calls) |
+| 10 | PASS | `--dry-run` calls no harness, writes no log, exits 0 |
+| 11 | PASS | a failing iteration is logged with `exit=3` and the loop continues (2 calls) |
+| 12 | PASS | `MAX_FAILURES` failed runs in a row end the loop with exit 2 (3 calls) |
+| 13 | PASS | an unknown argument exits 2 with usage |
+
+The last line was `13 passed, 0 failed`. `shellcheck bin/*.sh` also reported nothing. These are the fake harness results, not a real run. See the caution above.
+
+### The guards and the exit codes
+
+| Exit | Meaning | Causes |
+|---|---|---|
+| 0 | Normal end | The board is empty, the stop file exists, the iteration limit was reached, or the time limit was reached |
+| 1 | A human is needed | The same ticket was blocked after two iterations in a row |
+| 2 | Something is broken | `MAX_FAILURES` harness runs failed in a row (default 3), or bad usage |
+
+"Board empty" means nothing is in todo, tests, implementing or review. Blocked tickets alone count as empty. A single failed run is logged and the loop goes on. The blocked check compares the blocked tickets after the last two iterations, so it can fire before iteration 3 at the earliest. The defaults are 5 iterations, 120 minutes and a 30 second cool-down.
+
+### What the loop writes
+
+- `.agents/loop/runs/<timestamp>-i<n>.json` holds the harness output of each run, with `.err` beside it for stderr.
+- `.agents/loop/loop.log` has one line per iteration: the iteration number, the start and end times, the exit code, and the open tickets before and after.
+- When the loop ends it prints the cost hint:
+
+  ```text
+  [factory-loop] cost of this loop (run in the workshop):
+  [factory-loop]   node <workshop>/tools/ledger/ledger.mjs --since <loop start> --by agent
+  ```
+
+All three of `runs/`, `STOP` and `loop.log` are gitignored.
+
+<Aside type="note" title="What this act cost to build">
+The ledger for the act 10 window came to **$1.07 API-equivalent**, measured with `--no-cache` from the `act-9` tag time (2026-10-02T04:31:24Z) to the time it was run. It was Opus 5.5 $0.53 (the main session) and Sonnet 5.5 $0.54 (subagents), with no Fable.
+
+It is small because the act is small: a script, a prompt and a test, written by a subagent on Sonnet, and no real run. It is also a partial figure, because the window was still open when it was measured, and this page was still being written. It has the same caveat as the other acts: each window holds everything the session did in that time, so treat it as a rough shape. For the method, see [Counting the cost](/software-factory-workshop/reference/counting-the-cost/).
+</Aside>
+
+## Where to go from here
+
+This is the close of the workshop. You built a factory in ten acts. Four stations are isolate, build, prove and ship. The last two acts add orchestrate and unattended.
+
+| Station | Acts |
+|---|---|
+| Isolate | the sandbox (act 1), guardrails (act 2), worktrees (act 6) |
+| Build | the spec (act 4), tickets (act 5) |
+| Prove | gates (act 3), evidence and the rubric (act 7) |
+| Ship | the reviewer (act 8) |
+| Orchestrate | one session runs it all (act 9) |
+| Unattended | a loop and its guards (act 10) |
+
+**The cost thread.** Every act ended with a measured cost. The lesson was the same each time: use the strongest model to judge, and send the work to cheaper ones. Acts 1 to 8 came to $53.63, and 68% of it was Fable, before the routing line was added. Then you added the guards that stop a loop from spending without limit. Read [Counting the cost](/software-factory-workshop/reference/counting-the-cost/) for the method and the full table.
+
+**Where this workshop differs.** It differs from the popular version in three places. They are set out, with the reasons, in [Where we differ](/software-factory-workshop/reference/where-we-differ/).
+
+**Next steps.**
+
+- Run the loop overnight on a real backlog, in tmux, with `MAX_ITERATIONS=10 MAX_MINUTES=480 SLEEP_SECONDS=60`. In the morning read `.agents/loop/loop.log`, `agentboard list` and the open PRs.
+- Keep adding Lessons to the rubric. Every miss becomes one line in a file, fixed once.
+- Try a second vendor as a challenger: a different model reviews the PRs, or runs the loop on one change, and you compare the results and the cost.
+- Move the factory to your own project. Copy the skills, the hooks, the rubric and the loop. Keep the manual path working beside them.
