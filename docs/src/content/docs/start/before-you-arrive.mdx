@@ -26,6 +26,7 @@ Do this the day before. It takes about twenty minutes, most of it waiting on dow
        npm install -g @openai/codex
        codex --version
        ```
+       Written from the docs, not run.
      </TabItem>
      <TabItem label="Gemini CLI">
        ```bash
@@ -33,6 +34,7 @@ Do this the day before. It takes about twenty minutes, most of it waiting on dow
        gemini --version
        ```
        Use npm, not Homebrew. The Homebrew formula was several releases behind when this was written.
+       Written from the docs, not run.
      </TabItem>
      <TabItem label="Cursor">
        ```bash
@@ -40,6 +42,7 @@ Do this the day before. It takes about twenty minutes, most of it waiting on dow
        agent --version
        ```
        The command-line agent is called `agent`. The workshop uses it rather than the editor, so that every step is a command you can copy.
+       Written from the docs, not run.
      </TabItem>
    </Tabs>
 
@@ -112,7 +115,8 @@ Act 1 starts every attendee from the same place: your own harness, with none of 
     codex-workshop login
     ```
     The directory must exist before Codex starts; it does not create it. Your login lives inside `CODEX_HOME`, so sign in again. One thing does not move: personal skills in `~/.agents/skills` still load. If you have any, rename that folder for the two days.
-  </TabItem>
+       Written from the docs, not run.
+     </TabItem>
   <TabItem label="Gemini CLI">
     ```bash
     mkdir -p ~/gemini-workshop
@@ -120,7 +124,8 @@ Act 1 starts every attendee from the same place: your own harness, with none of 
     gemini-workshop
     ```
     `GEMINI_CLI_HOME` is the parent of the `.gemini` folder, not the folder itself. The first run creates `~/gemini-workshop/.gemini` and asks you to sign in.
-  </TabItem>
+       Written from the docs, not run.
+     </TabItem>
   <TabItem label="Cursor">
     ```bash
     mkdir -p ~/.cursor-workshop
@@ -128,7 +133,8 @@ Act 1 starts every attendee from the same place: your own harness, with none of 
     agent-workshop
     ```
     Cursor documents `CURSOR_CONFIG_DIR` as the location of the CLI configuration file. Whether it also moves your MCP servers, hooks and skills is not documented, so check with `agent-workshop mcp list` once it starts. If you still see your servers, disable them for the two days with `agent mcp disable <name>`.
-  </TabItem>
+       Written from the docs, not run.
+     </TabItem>
 </Tabs>
 
 Put the alias in your shell profile so it survives a new terminal. Everywhere this guide says "start your harness", it means this alias.

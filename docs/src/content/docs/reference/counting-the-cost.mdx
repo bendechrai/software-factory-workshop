@@ -46,7 +46,7 @@ A model the table does not know is never counted as free. It shows as `(UNPRICED
 
 Claude Code mostly writes its cache with a 1-hour lifetime. Anthropic prices that at 2 times the input price. A 5-minute write is 1.25 times. The log records both counts for each message, and the ledger prices each at its own rate.
 
-The earlier script used in the author's aviation project priced every cache write at the 5-minute rate. That underpriced the 1-hour writes. On the aviation logs the gap was about $19.64.
+The earlier script used in the author's aviation project priced every cache write at the 5-minute rate. That underpriced the 1-hour writes.
 
 ## API-equivalent versus subscription
 
@@ -58,7 +58,7 @@ If you are on a subscription, you pay a flat fee. Anthropic publishes no token o
 node ../software-factory-workshop/tools/ledger/ledger.mjs --plan-usd 200 --plan-allowance-usd 2200
 ```
 
-That adds a "share of plan" column: API dollars, divided by the allowance, times the plan price. It is an estimate. Measured heavy months and the often-quoted 36 times figure differ by several times, and the share moves in step. Read it as "this much of one month's plan, if the allowance were X". It is not a bill. It also ignores weekly limits and a second plan if you have one.
+That adds a "share of plan" column: API dollars, divided by the allowance, times the plan price. It is an estimate. Estimates of the monthly allowance differ by several times (from about $2,200 to about $7,200 in the notes behind this guide), and the share moves in step. Read it as "this much of one month's plan, if the allowance were X". It is not a bill. It also ignores weekly limits and a second plan if you have one.
 
 ## OpenRouter
 

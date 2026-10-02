@@ -26,12 +26,12 @@ You start in a sandboxed copy of your own harness with no skills, no plugins and
 		The sandbox and the vibe. Guardrails. Gates. Specifications. By the end of the day one agent builds one feature at a time, the way you want it built, and cannot commit work that fails the checks.
 	</Card>
 	<Card title="Day 2: from pipeline to factory" icon="setting">
-		Tickets. Isolation. Proof. Review. The orchestrator. Unattended runs. By the end of the day an orchestrator dispatches subagents per ticket, verifies each one, and loops until the board is empty.
+		Tickets. Isolation. Proof. Review. The orchestrator. Unattended runs. By the end of the day an orchestrator dispatches subagents per ticket, verifies each one, has each pull request reviewed on a different model, and loops until the board is empty. A small loop with guards can restart it without you at the keyboard. Every act ends with what it cost, so you see the cost fall as the strongest model judges and cheaper ones do the work.
 	</Card>
 	<Card title="Harness and model agnostic" icon="puzzle">
 		The worked path uses Claude Code. Every harness-specific step has tabs for Codex CLI, Gemini CLI and Cursor. The ideas do not depend on any of them.
 	</Card>
 	<Card title="Proven before it was written" icon="approve-check">
-		Every hands-on step in this guide was run, in order, on the demo app before it was written down. The demo repository has a git tag per act so you can catch up at any point.
+		Every Claude Code step in this guide was run, in order, on the demo app before it was written down. The steps for other harnesses are marked when they were written from the docs and not run, and the act 10 loop was only tested against a stand-in harness. The demo repository has a git tag per act so you can catch up at any point.
 	</Card>
 </CardGrid>

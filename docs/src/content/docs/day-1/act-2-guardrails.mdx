@@ -52,6 +52,7 @@ The code-structure skill. Three layers, with a table of what each one owns and n
      </TabItem>
      <TabItem label="Codex CLI">
        Nothing more to do. `AGENTS.md` and `.agents/skills/` are Codex's own conventions.
+       Written from the docs, not run.
      </TabItem>
      <TabItem label="Gemini CLI">
        ```bash
@@ -59,9 +60,11 @@ The code-structure skill. Three layers, with a table of what each one owns and n
        curl -fsSL https://raw.githubusercontent.com/bendechrai/software-factory-workshop/main/templates/act-2/.gemini/settings.json -o .gemini/settings.json
        ```
        Commit that file. It tells Gemini to read `AGENTS.md`; `.agents/skills/` is read without a setting.
+       Written from the docs, not run.
      </TabItem>
      <TabItem label="Cursor">
        Nothing more to do. Cursor reads `AGENTS.md` at the root and skills in `.agents/skills/`.
+       Written from the docs, not run.
      </TabItem>
    </Tabs>
 
@@ -136,7 +139,7 @@ The restructuring touched 43 files: 2132 lines added, 268 removed. It converted 
 - Main session $4.15, subagents $1.02 (20% subagents).
 - The window also holds docs and research work done at the same time, so treat it as approximate.
 
-This act cost the most in the main session, because the orchestrator was still doing work itself. Run the ledger now and compare your own number.
+Most of this act's cost (80%) was the main session, because the orchestrator was still doing work itself. Run the ledger now and compare your own number.
 </Aside>
 
 ## What you take into act 3

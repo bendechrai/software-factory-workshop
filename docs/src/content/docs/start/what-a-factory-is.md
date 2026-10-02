@@ -14,7 +14,7 @@ The version of the idea that spread in 2026 has four steps, and they are a good 
 | **Isolate** | Every piece of work starts in its own git worktree on its own branch, never on `main`. | Two agents overwriting each other's files. |
 | **Build** | The agent writes code to a structure you have written down: a service layer, small files, no repetition. | Working code that nobody, human or agent, can read later. |
 | **Prove** | Work is not done until it shows evidence: tests, a measurement, or a before and after picture. | An agent saying it tested something it did not. |
-| **Ship** | A review sends the work back to Build until it passes. Only then does a person merge. | Shipping the first thing that compiled. |
+| **Ship** | A review sends the work back to Build until it passes. Only then is it merged, by a person or by the orchestrator when a person has said so. | Shipping the first thing that compiled. |
 
 The idea is harness and model agnostic. It does not matter whether you drive Claude Code, Codex, Gemini CLI or Cursor, and it does not matter which model is underneath. A factory is about how you work.
 
@@ -30,6 +30,8 @@ The popular telling says a software factory is "just a bunch of markdown files".
 
 ## The loop at the end of day two
 
-By the last act you will have one session acting as an orchestrator. It reads the ticket board, dispatches a subagent per ticket into its own worktree, checks that each result does what was asked and touched nothing else, sends the work through the reviewer, merges what passes, and goes back to the board. You are the human in the loop: you write the specs with it, you look at the evidence it collects, and you merge.
+By the last act you will have one session acting as an orchestrator. It reads the ticket board, dispatches a subagent per ticket into its own worktree, checks that each result does what was asked and touched nothing else, sends the work through a reviewer on a different model, merges what passes if you have delegated that to it, and goes back to the board. You are the human in the loop: you write the specs with it, you look at the evidence it collects, and you decide who merges.
+
+Act 10 then puts a small loop around that session. It starts a fresh session each time, and guards stop it on a cap, a time limit, a budget or a stop file. Every act also reports what it cost, so you can see where the money goes and why the strongest model should judge while cheaper ones do the work.
 
 Nothing in that sentence names a product. That is the point.

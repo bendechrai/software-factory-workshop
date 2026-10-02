@@ -12,7 +12,7 @@ import implementer from '../../../../../templates/act-9/.claude/agents/implement
 
 **The idea.** One session becomes the orchestrator. It reads the board and dispatches one subagent per ticket, on the model that fits the work. It checks every report itself. It sends each PR to a reviewer on a different model, merges what passes, and loops until the board is empty. It judges. It writes no product code. This is waterfall for the spec and agile for the doing. The human owns the spec: the proposal, the design and the tasks are agreed before the run starts. The orchestrator and its subagents own the doing, in small tickets, with feedback after each one.
 
-**Time:** about 90 minutes. This is the longest act.
+**Time:** about 90 minutes. This is the longest act of day two.
 
 ## The talk
 
@@ -31,7 +31,7 @@ import implementer from '../../../../../templates/act-9/.claude/agents/implement
    | Reviewer | a different model from the implementer: `opus` when the implementer is `sonnet`, or the OpenRouter second opinion | a different model has different blind spots |
    | Mechanical chores | `haiku`, only for chores with a clear pass or fail | cheap, and the result is checked anyway |
 
-3. **A report is a claim.** An implementer says it is done. The orchestrator does not take its word. Step 6 of the skill is a list of checks it runs itself: `gh pr view`, `gh pr diff --name-only` (every file is in scope), `gh pr diff` (read it), `git log` and `git status` in the worktree, `git merge-base --is-ancestor origin/main origin/<branch>`, and `E2E_PORT=4399 bin/preflight.sh <headRefOid>` on the exact commit. Then it reads the evidence: the short shas, the values and the screenshots, not only the `ok` flags. This run shows why. Two of the seven things that went wrong were caught only because of this step, or missed because it was too shallow.
+3. **A report is a claim.** An implementer says it is done. The orchestrator does not take its word. Step 6 of the skill is a list of checks it runs itself: `gh pr view`, `gh pr diff --name-only` (every file is in scope), `gh pr diff` (read it), `git log` and `git status` in the worktree, `git merge-base --is-ancestor origin/main origin/<branch>`, and `E2E_PORT=4399 bin/preflight.sh <headRefOid>` on the exact commit. Then it reads the evidence: the short shas, the values and the screenshots, not only the `ok` flags. This run shows why. Two of the seven things that went wrong below turn on this step: one was caught by it, and one slipped past because it was too shallow.
 
 4. **Parallel only when files do not overlap.** The orchestrator reads `design.md` for the dependency note and the files each group touches. A group that depends on another waits for its merge. Groups with different files run at the same time. Two groups that share a file run one after the other, unless `design.md` names the shared file and says how the second one rebases. In the demo, `src/app.ts` was the shared file and only group 3 was expected to edit it.
 
@@ -53,14 +53,14 @@ The implementer agent builds one ticket in its own worktree. It points at the sk
 
 Each harness has its own agent file. Only Claude Code was run for this workshop. The other three were written from the docs and are marked "Written from the docs, not run". Each one points at the body of the Claude Code file.
 
-<Tabs>
+<Tabs syncKey="harness">
   <TabItem label="Claude Code">
     `.claude/agents/implementer.md` with `model: sonnet`. This is the one the demo run used, with the deviation described below. The reviewer you added in act 8 is `model: opus`, so the two differ, as the rule needs.
   </TabItem>
-  <TabItem label="Codex">
+  <TabItem label="Codex CLI">
     `.codex/agents/implementer.toml`. Written from the docs, not run.
   </TabItem>
-  <TabItem label="Gemini">
+  <TabItem label="Gemini CLI">
     `.gemini/agents/implementer.md`. Written from the docs, not run.
   </TabItem>
   <TabItem label="Cursor">
@@ -193,4 +193,4 @@ The new `implementer` agent type is not loaded until the session restarts. So on
 
 ## What you take into act 10
 
-You have a factory that runs on its own. You write the spec, and one session builds, proves, reviews and merges it, while you watch the board. You know what a run costs, in measured numbers by model. You also know where it leaks: the orchestrator's own briefs, the rebases, and the evidence that looks green and is not. Every one of those is now a line in a file you own. What it left for you is a short list of NITs, a narrower column and a flaky shared database. Those are the next tickets.
+You have a factory that runs without you typing into it. You write the spec, and one session builds, proves, reviews and merges it, while you watch the board. You know what a run costs, in measured numbers by model. You also know where it leaks: the orchestrator's own briefs, the rebases, and the evidence that looks green and is not. Every one of those is now a line in a file you own. What it left for you is a short list of NITs, a narrower column and a flaky shared database. Those are the next tickets.
