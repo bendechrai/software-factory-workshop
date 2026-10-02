@@ -1,0 +1,196 @@
+---
+title: "Act 4: specifications"
+description: Write down what to build before anything is built. A proposal, a spec, a design and a task list that you read and approve, then build, then archive.
+sidebar:
+  order: 4
+  label: "Act 4: specifications"
+---
+
+import { Tabs, TabItem, Steps, Aside, Code } from '@astrojs/starlight/components';
+import config from '../../../../../templates/act-4/openspec/config.yaml?raw';
+import specDelta from '../../../../../templates/act-4/example-spec-delta.md?raw';
+import tasks from '../../../../../templates/act-4/example-tasks.md?raw';
+
+**The idea.** Act 3 made sure the agent cannot land broken work. What it builds is still decided one prompt at a time, in your head. This act writes it down first. You give the agent an idea, it writes a proposal, a spec, a design and a list of tasks, and then it stops. You read them. Only when you say so does anything get built. When the work is done the spec is archived, so the record of what the system does stays current.
+
+**Time:** about 90 minutes. 20 for the talk, 55 hands-on, 15 to compare.
+
+## The talk
+
+1. **Why a spec before code.** One person with the whole product in their head can go straight from prompt to build. A second agent, or a second person, cannot. They need to know what the first one meant. A spec is that record. It is also where the tasks come from: in act 5 each task becomes a ticket on a board, so several agents can share the work.
+2. **Waterfall for the thinking, agile for the doing.** The thinking is rigorous and written down: what changes, what must be true, what could go wrong. The doing is short loops, one task at a time. Kent Beck's objection is fair: you learn during implementation, so a plan written up front will be wrong somewhere. The answer is that specs are allowed to change. When the build teaches you something, the spec bends, and the agent says so. You will see that happen in this act.
+3. **Skip the ceremony for a one-sentence diff.** Anthropic's best practice says it plainly: "If you could describe the diff in one sentence, skip the plan". A typo, a renamed variable and a changed colour do not need a proposal. Use this flow when the change has rules, edge cases or more than one file.
+4. **Three alternatives, and why OpenSpec.** Spec-kit, Kiro and BMAD all put a spec step before the build. This workshop uses OpenSpec for three reasons. It is lightweight: a few markdown files per change. It works with all four harnesses. And it archives: a finished change is folded into the current spec and filed away.
+
+## The files
+
+OpenSpec is set up by one command, and it adds one file you edit: `openspec/config.yaml`. Its `context:` field is read by the agent every time it writes a proposal. Put in only what the agent cannot infer from the code. This is what the demo run used:
+
+<Code code={config} lang="yaml" title="openspec/config.yaml" />
+
+A change is a folder under `openspec/changes/`. The agent writes four files into it. The most important is the spec delta. It does not restate the whole system. It lists only what this change adds, modifies or removes, each as a requirement with scenarios in WHEN and THEN form. This is the delta from the demo run:
+
+<Code code={specDelta} lang="md" title="openspec/changes/link-expiry/specs/link-expiry/spec.md" />
+
+The last file is `tasks.md`. Each task names the files it touches and says how it is verified. The boxes are ticked here because this is the file after the build. Notice task 3.4, and read it again after the hands-on.
+
+<Code code={tasks} lang="md" title="openspec/changes/link-expiry/tasks.md" />
+
+The other two files are `proposal.md` (why, what changes, impact) and `design.md` (numbered decisions, each with the alternatives that were rejected). Read the whole set in the [templates folder](https://github.com/bendechrai/software-factory-workshop/tree/main/templates/act-4).
+
+## Hands-on
+
+<Steps>
+
+1. **Install OpenSpec.** Run this in your `hop` repository. It needs no global install.
+
+   ```bash
+   cd hop
+   npx -y @fission-ai/openspec@latest init --tools claude --no-animation
+   ```
+
+   `--tools` takes a comma separated list from `claude`, `codex`, `gemini` and `cursor`. Pass all four if your team uses more than one: `--tools claude,codex,gemini,cursor`.
+
+   It creates `openspec/config.yaml`, `openspec/specs/` and `openspec/changes/archive/`. It also writes six skills for each tool you named:
+
+   | Harness | Skills | Commands |
+   |---|---|---|
+   | Claude Code | `.claude/skills` | `.claude/commands/opsx/*.md` |
+   | Codex CLI | `.agents/skills` | none, skills only |
+   | Gemini CLI | `.gemini/skills` | `.gemini/commands/opsx/*.toml` |
+   | Cursor | `.cursor/skills` | `.cursor/commands/opsx-*.md` |
+
+   <Aside type="note" title="Symlinks">
+   In the demo repository `.claude/skills` is a symlink to `../.agents/skills`, so the six skills landed once, in `.agents/skills`, and are shared. Only `.claude/commands/opsx/` was new for Claude Code.
+   </Aside>
+
+   Restart your harness so it sees the new skills and commands.
+
+2. **Write the project context.** Open `openspec/config.yaml` and fill in `context:` with the constraints an agent cannot infer. The file above shows what the demo used: the three layers, the migration rule, the definition of done, the test conventions and the writing style. Leave out anything obvious from reading the code. A short context is read. A long one is skimmed.
+
+3. **Start a proposal.** This is the step that differs per harness. Give it the idea, word for word.
+
+   <Tabs syncKey="harness">
+     <TabItem label="Claude Code">
+       ```text
+       /opsx:propose "Links can expire. When creating a link the user can optionally set an expiry, as a number of days from now (1 to 365). After the expiry passes, visiting the short link returns 410 Gone with a plain page saying the link has expired, and the home page shows the link greyed out with the word Expired instead of its click count. Links with no expiry never expire."
+       ```
+     </TabItem>
+     <TabItem label="Codex CLI">
+       Codex has skills but no commands, so you call the skill by name:
+       ```text
+       $openspec-propose "Links can expire. When creating a link the user can optionally set an expiry, as a number of days from now (1 to 365). After the expiry passes, visiting the short link returns 410 Gone with a plain page saying the link has expired, and the home page shows the link greyed out with the word Expired instead of its click count. Links with no expiry never expire."
+       ```
+     </TabItem>
+     <TabItem label="Gemini CLI">
+       ```text
+       /opsx:propose "Links can expire. When creating a link the user can optionally set an expiry, as a number of days from now (1 to 365). After the expiry passes, visiting the short link returns 410 Gone with a plain page saying the link has expired, and the home page shows the link greyed out with the word Expired instead of its click count. Links with no expiry never expire."
+       ```
+     </TabItem>
+     <TabItem label="Cursor">
+       ```text
+       /opsx-propose "Links can expire. When creating a link the user can optionally set an expiry, as a number of days from now (1 to 365). After the expiry passes, visiting the short link returns 410 Gone with a plain page saying the link has expired, and the home page shows the link greyed out with the word Expired instead of its click count. Links with no expiry never expire."
+       ```
+     </TabItem>
+   </Tabs>
+
+   The propose skill has a planning boundary. It writes `proposal.md`, `specs/<capability>/spec.md`, `design.md` and `tasks.md`, and then it stops. It does not write code. On the demo run the change was named `link-expiry` and the agent reported 4 of 4 artifacts done.
+
+4. **Validate the change.** This is a deterministic check on the format, not a model's opinion.
+
+   ```bash
+   npx -y @fission-ai/openspec@latest validate link-expiry
+   ```
+
+   The demo run printed `Change 'link-expiry' is valid`.
+
+5. **Read the proposal before you approve it.** This is the most important step in the act. The agent will not push back on its own plan, so you have to. Read `proposal.md`, the spec delta, `design.md` and `tasks.md`, and look for three things.
+
+   - **Assumptions it made.** The agent was not asked about edge cases, so it picked an answer. Find each one and decide if it is yours. The demo proposal recorded four: a visit exactly at the expiry counts as expired, an expired visit is not counted as a click, an expired link can still be deleted, and the API gains `expiresAt` and `expired` so the page never reads a clock.
+   - **Scope it left out.** Compare the proposal with your idea. Is anything you asked for missing? Is anything there you did not ask for?
+   - **Tasks that each say how they are verified.** Every task should name the files it touches and end with a check you could run. A task that says "implement the rule" with no check is a place the agent can claim success without evidence.
+
+   Also read the design. The demo run had 7 numbered decisions, each with alternatives. One of them, "followLink checks before it counts", exists because the old service bumped the count and returned the URL in one query. That left no point where a rule could say no. A decision like that is easy to miss in code and obvious in a design.
+
+   If something is wrong, say so in the chat and ask for the file to be changed. Editing a spec is cheap. Editing code that was built from the wrong one is not.
+
+6. **Approve and apply.** When you are happy, tell the agent so and start the build.
+
+   <Tabs syncKey="harness">
+     <TabItem label="Claude Code">
+       ```text
+       /opsx:apply
+       ```
+     </TabItem>
+     <TabItem label="Codex CLI">
+       ```text
+       $openspec-apply
+       ```
+     </TabItem>
+     <TabItem label="Gemini CLI">
+       ```text
+       /opsx:apply
+       ```
+     </TabItem>
+     <TabItem label="Cursor">
+       ```text
+       /opsx-apply
+       ```
+     </TabItem>
+   </Tabs>
+
+   On the demo run the message was "Looks right. Apply it." with the apply command. The agent works through `tasks.md` and ticks each box as it finishes. Watch the gates from act 3 run on its commit.
+
+7. **Watch for a deviation, and make the agent say so.** Plans meet code and sometimes lose. On the demo run task 3.4 said "create then set expiry in the past". The service has no update method, so there was no way to do that. The agent could have added an update method that only the test used. It did not. It inserted an already-expired link instead and reported the change in its summary. That is the behaviour to look for. A spec may bend when the build teaches you something. The agent must tell you when it bends, and why. If a deviation shows up only in the diff, the agent has failed that test.
+
+8. **Archive the change.** Archiving folds the finished change into the current spec.
+
+   <Tabs syncKey="harness">
+     <TabItem label="Claude Code">
+       ```text
+       /opsx:archive
+       ```
+     </TabItem>
+     <TabItem label="Codex CLI">
+       ```text
+       $openspec-archive
+       ```
+     </TabItem>
+     <TabItem label="Gemini CLI">
+       ```text
+       /opsx:archive
+       ```
+     </TabItem>
+     <TabItem label="Cursor">
+       ```text
+       /opsx-archive
+       ```
+     </TabItem>
+   </Tabs>
+
+   Two things happen. The delta is synced into `openspec/specs/link-expiry/spec.md`: the title becomes `# link-expiry Specification` and `## ADDED Requirements` becomes `## Requirements`. Then the change folder is moved to `openspec/changes/archive/2026-10-01-link-expiry/`. `openspec/changes/` is left with no active change.
+
+   Why this matters: the main spec is the current truth, and the archive is the history. Without archiving you end up with a pile of plans and no answer to "what does the system do now?".
+
+9. **Check, then tag.**
+
+   ```bash
+   bin/preflight.sh HEAD
+   git tag act-4
+   ```
+
+</Steps>
+
+## What you see
+
+On the demo run the agent produced all four artifacts in one pass, and `openspec validate link-expiry` passed. `tasks.md` had 4 groups and 14 tasks, each naming files and how to verify it.
+
+After "Looks right. Apply it." the agent ticked all 14 boxes. It added migration `002` and never edited `001`. It put the expiry rule in one file, `src/actions/is-expired.ts`, added a 410 page and wrote two browser scenarios. The end-to-end database moved from memory to a throwaway file, so a test can plant an already-expired link through the real service. 31 unit tests and 4 browser scenarios passed. Preflight passed. The commit was 27 files, +394 and -49.
+
+The one deviation was task 3.4, described in step 7. The agent reported it, and the spec still matched what shipped.
+
+Compare your run with a neighbour's. The idea was the same. Look at what the two proposals assumed differently, and which assumption you would have chosen.
+
+## What you take into act 5
+
+You have a spec that says what to build, and a task list where each task names its files and its check. Today one agent works through that list in order. Act 5 turns each task into a ticket on a board, so several agents can work at once.

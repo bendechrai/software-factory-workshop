@@ -1,0 +1,15 @@
+schema: spec-driven
+
+# Project context: constraints an agent cannot infer from the code.
+context: |
+  TypeScript with no build step. Node runs the .ts files directly.
+  Code has three layers. A request flows routes, then actions, then services. Nothing flows sideways.
+  - Routes (src/routes/) parse the request, call one action and shape the response.
+  - Actions (src/actions/) hold the business rules and return a result that says what went wrong in plain words.
+  - Services (src/services/) do the mechanics: database queries, file access, code generation.
+  Schema changes are numbered SQL migrations in migrations/. Never edit an old one.
+  Work is not done until every gate in DEFINITION_OF_DONE.md passes or is waived in writing.
+  Tests sit beside the layer they test. Action tests use a fake service. Service tests use a throwaway database.
+  Writing style is plain words, short sentences and only characters on a standard keyboard.
+
+# Per-artifact rules (optional)
