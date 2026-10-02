@@ -12,4 +12,3 @@ demo/vibe/*/*.sqlite
 demo/hop/
 .ledger-cache.json
 demo/hop.worktrees/
-.ledger-cache.json
