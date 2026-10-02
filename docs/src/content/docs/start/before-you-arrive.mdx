@@ -35,7 +35,11 @@ Do this the day before. It takes about twenty minutes, most of it waiting on dow
        ```
        Use npm, not Homebrew. The Homebrew formula was several releases behind when this was written.
 
-       Do not plan on "Login with Google" with a personal account. On 2026-10-02 it failed with: "Failed to sign in. Message: This client is no longer supported for Gemini Code Assist for individuals. To continue using Gemini, please migrate to the Antigravity suite of products: https://antigravity.google". Google stopped serving Gemini CLI to Gemini Code Assist for individuals, Google AI Pro and Google AI Ultra accounts on 2026-06-18. Use a Gemini API key from https://aistudio.google.com/app/apikey instead: `export GEMINI_API_KEY="<your key>"`, start `gemini` and pick "Use Gemini API key". A free-tier key is limited to Flash models and 250 requests a day; a paid key has no such cap. Vertex AI and Gemini Code Assist Standard or Enterprise licences are documented as still supported. The installation commands and the API key route are written from the docs, not run. The sign-in failure itself was observed.
+       Do not plan on "Login with Google" with a personal account. On 2026-10-02 it failed with: "Failed to sign in. Message: This client is no longer supported for Gemini Code Assist for individuals. To continue using Gemini, please migrate to the Antigravity suite of products: https://antigravity.google". Google stopped serving Gemini CLI to Gemini Code Assist for individuals, Google AI Pro and Google AI Ultra accounts on 2026-06-18. Use a Gemini API key from https://aistudio.google.com/app/apikey instead: `export GEMINI_API_KEY="<your key>"`, start `gemini` and pick "Use Gemini API key". Vertex AI and Gemini Code Assist Standard or Enterprise licences are documented as still supported. The install command itself was not run (the tests used npx), and the sign-in failure was observed.
+
+       Tested with Gemini CLI 0.62.0 (via npx, free AI Studio key, 2026-10-02): the API key route works headless. A free key allows about 20 requests a day PER MODEL (observed), not 250. `gemini-3.1-pro` has no free quota, and `gemini-2.5-pro` is closed to new keys (404). These models worked: `gemini-2.5-flash`, `gemini-3-flash-preview`, `gemini-3.1-flash-lite-preview` and `gemini-flash-latest`. Frequent 503 "high demand" errors are retried by the CLI. Each agent turn is several requests, so for two workshop days a paid key is realistic.
+
+       Two traps. A failed Google sign-in leaves `security.auth.selectedType` set to `oauth-personal` in settings, and then headless runs fail even with the key set: remove that setting or set it to `gemini-api-key`. And in a new folder, headless runs stop with "not running in a trusted directory" unless you set `GEMINI_CLI_TRUST_WORKSPACE=true`, pass `--skip-trust`, or trust the folder once in an interactive session.
      </TabItem>
      <TabItem label="Cursor">
        ```bash
@@ -134,7 +138,7 @@ Act 1 starts every attendee from the same place: your own harness, with none of 
     export GEMINI_API_KEY="<your key from Google AI Studio>"
     gemini-workshop
     ```
-    Choose "Use Gemini API key" when asked. Using the key with the sandbox folder is written from the docs, not run.
+    Choose "Use Gemini API key" when asked. Tested with Gemini CLI 0.62.0: with `GEMINI_CLI_HOME` set, the real `~/.gemini` was untouched and all writes went to the sandbox folder. The key itself was not stored there. If a failed sign-in left `security.auth.selectedType` as `oauth-personal` in `~/gemini-workshop/.gemini/settings.json`, remove it or set it to `gemini-api-key`. The menu choice itself is interactive and was not run.
      </TabItem>
   <TabItem label="Cursor">
     ```bash

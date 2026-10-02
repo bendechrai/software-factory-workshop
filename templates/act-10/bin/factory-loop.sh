@@ -10,7 +10,10 @@
 #                 the prompt is appended last. The list has no spaces because this command is split on spaces.
 #                 This permission set is untested in a real loop.)
 #   Codex:       codex exec --json -C <repo>   (config: .agents/loop/codex-config.example.toml)
-#   Gemini:      gemini --approval-mode auto_edit -o json -p      (prompt follows -p)
+#   Gemini:      gemini --approval-mode yolo -o json -p      (prompt follows -p)
+#                (auto_edit removes the shell tool headless, so git/npm/gh cannot run. yolo runs every
+#                 command with your user permissions. Also set GEMINI_CLI_TRUST_WORKSPACE=true and use a paid key.
+#                 Headless flags tested with Gemini CLI 0.62.0; the loop itself was not run with Gemini.)
 #   Cursor:      agent -p --force --output-format json
 #
 # Exit codes: 0 normal end (board empty, stop file, iteration or time limit),

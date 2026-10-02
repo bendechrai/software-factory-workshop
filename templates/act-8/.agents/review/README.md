@@ -14,7 +14,7 @@ a line in the rubric, so the reviewer gets better at reviewing this code.
 | `challenger.md` | The challenger's instructions: argue against merging and against an earlier review |
 | `../skills/review-loop/SKILL.md` | What the implementer does with a review, and the 3-round limit |
 | `.claude/agents/reviewer.md` | Claude Code subagent that loads `reviewer.md` |
-| `.codex/agents/reviewer.toml`, `.gemini/agents/reviewer.md`, `.cursor/agents/reviewer.md` | The same for Codex, Gemini CLI and Cursor. Written from the docs, not run |
+| `.codex/agents/reviewer.toml`, `.gemini/agents/reviewer.md`, `.cursor/agents/reviewer.md` | The same for Codex, Gemini CLI and Cursor. Gemini tested with Gemini CLI 0.62.0 (loads after acknowledgement); the others see the guide |
 | `bin/second-opinion.mjs` | Optional cross-vendor review through OpenRouter |
 | `openrouter-usage.jsonl` | One line per OpenRouter call: tokens and cost. Committed, it is the cost record |
 

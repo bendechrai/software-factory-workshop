@@ -60,7 +60,7 @@ The code-structure skill. Three layers, with a table of what each one owns and n
        curl -fsSL https://raw.githubusercontent.com/bendechrai/software-factory-workshop/main/templates/act-2/.gemini/settings.json -o .gemini/settings.json
        ```
        Commit that file. It tells Gemini to read `AGENTS.md`; `.agents/skills/` is read without a setting.
-       Written from the docs, not run.
+       Tested with Gemini CLI 0.62.0: `AGENTS.md` was read through this setting and not without it, and skills in `.agents/skills/` were found with no setting.
      </TabItem>
      <TabItem label="Cursor">
        Nothing more to do. Cursor reads `AGENTS.md` at the root, falls back to `CLAUDE.md` when there is no `AGENTS.md`, and reads skills from both `.agents/skills/` and `.claude/skills/`.

@@ -48,10 +48,11 @@ Three things to say before anyone types.
      <TabItem label="Gemini CLI">
        ```bash
        export GEMINI_API_KEY="<your key>"   # personal Google sign-in no longer works
+       export GEMINI_CLI_TRUST_WORKSPACE=true   # needed for headless runs in a new folder
        gemini-workshop
        ```
        Type `/mcp list` and `/skills list` to confirm both are empty.
-       Written from the docs, not run.
+       Tested with Gemini CLI 0.62.0: the API key works headless (a free key is limited to about 20 requests a day per model; see before you arrive). The interactive `/mcp list` and `/skills list` commands were not run (written from the docs).
      </TabItem>
      <TabItem label="Cursor">
        ```bash

@@ -137,9 +137,10 @@ Use your `hop` repository from act 9.
      </TabItem>
      <TabItem label="Gemini CLI">
        ```bash
-       HARNESS_CMD="gemini --approval-mode auto_edit -o json -p" MAX_ITERATIONS=3 bin/factory-loop.sh
+       GEMINI_CLI_TRUST_WORKSPACE=true HARNESS_CMD="gemini --approval-mode yolo -o json -p" MAX_ITERATIONS=3 bin/factory-loop.sh
        ```
-       Gemini's `-p` takes the prompt as its value, so it goes last. Written from the docs, not run.
+       Gemini's `-p` takes the prompt as its value, so it goes last. Use `--approval-mode yolo`, not `auto_edit`: headless, `auto_edit` removes the shell tool, so the loop could not run `git`, `npm`, `gh` or `agentboard`. Be aware that `yolo` runs every command with your user permissions, like the Codex sandbox-off note above. Use it only on a machine and account where you accept that. Also set `GEMINI_CLI_TRUST_WORKSPACE=true`, and use a paid key, because a free key's quota (about 20 requests a day per model) runs out quickly.
+       Tested with Gemini CLI 0.62.0: `-p`, `-m`, `-o json` and `--approval-mode yolo` (shell commands ran). The loop itself was not run with Gemini.
      </TabItem>
      <TabItem label="Cursor">
        ```bash

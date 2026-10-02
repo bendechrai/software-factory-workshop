@@ -51,7 +51,7 @@ The implementer agent builds one ticket in its own worktree. It points at the sk
 
 <Code code={implementer} lang="md" title=".claude/agents/implementer.md" />
 
-Each harness has its own agent file. Claude Code and Codex CLI were run for this workshop. The Gemini CLI file was written from the docs and is marked "Written from the docs, not run". The Cursor file was tested only as far as subagent loading. Each one points at the body of the Claude Code file.
+Each harness has its own agent file. Claude Code and Codex CLI were run for this workshop. The Gemini CLI file was tested with Gemini CLI 0.62.0 for loading and delegation by name. The Cursor file was tested only as far as subagent loading. Each one points at the body of the Claude Code file.
 
 <Tabs syncKey="harness">
   <TabItem label="Claude Code">
@@ -61,7 +61,7 @@ Each harness has its own agent file. Claude Code and Codex CLI were run for this
     `.codex/agents/implementer.toml`, with `model = "openai/gpt-5.3-codex"`. On OpenRouter, models need the provider prefix. Tested with Codex CLI 0.160.0: the implementer agent loads, spawning it by name with `spawn_agent` works, the child ran on the model in the TOML, and the keys `name`, `description`, `developer_instructions` and `model` are all accepted.
   </TabItem>
   <TabItem label="Gemini CLI">
-    `.gemini/agents/implementer.md`. Written from the docs, not run.
+    `.gemini/agents/implementer.md` with `model: gemini-3-flash-preview`, while the reviewer template uses `gemini-3.1-flash-lite-preview`, so the two differ. Gemini asks you to acknowledge each project agent on first use (interactive; headless cannot answer). Tested with Gemini CLI 0.62.0: agents load after acknowledgement and delegate by name through `invoke_agent`. The real implementer body was not run.
   </TabItem>
   <TabItem label="Cursor">
     `.cursor/agents/implementer.md`. Tested with Cursor CLI 2026.10.01: subagents in `.cursor/agents` and `.claude/agents` both load, and `.cursor` wins a name clash. The real implementer body was not run.

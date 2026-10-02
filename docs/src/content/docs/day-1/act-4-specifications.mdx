@@ -92,10 +92,13 @@ The other two files are `proposal.md` (why, what changes, impact) and `design.md
        Tested with Codex CLI 0.160.0.
      </TabItem>
      <TabItem label="Gemini CLI">
+       Gemini slash commands come only from `.gemini/commands/**/*.toml`, and this repo ships none, so `/opsx:propose` does not exist yet. Skills are activated by the model, not by `/name`. Ask in plain words:
        ```text
-       /opsx:propose "Links can expire. When creating a link the user can optionally set an expiry, as a number of days from now (1 to 365). After the expiry passes, visiting the short link returns 410 Gone with a plain page saying the link has expired, and the home page shows the link greyed out with the word Expired instead of its click count. Links with no expiry never expire."
+       Use the openspec-propose skill: "Links can expire. When creating a link the user can optionally set an expiry, as a number of days from now (1 to 365). After the expiry passes, visiting the short link returns 410 Gone with a plain page saying the link has expired, and the home page shows the link greyed out with the word Expired instead of its click count. Links with no expiry never expire."
        ```
-       Written from the docs, not run.
+       Tested headless with Gemini CLI 0.62.0: the model activated the skill (`activate_skill`).
+
+       Or run `openspec init --tools gemini`, which writes `.gemini/commands/opsx/*.toml` so that `/opsx:propose`, `/opsx:apply` and `/opsx:archive` exist. That route was not tested interactively. Written from the docs, not run.
      </TabItem>
      <TabItem label="Cursor">
        ```text
@@ -141,9 +144,9 @@ The other two files are `proposal.md` (why, what changes, impact) and `design.md
      </TabItem>
      <TabItem label="Gemini CLI">
        ```text
-       /opsx:apply
+       Use the openspec-apply-change skill.
        ```
-       Written from the docs, not run.
+       Tested headless with Gemini CLI 0.62.0. With the `openspec init --tools gemini` commands, `/opsx:apply` also works (not tested interactively).
      </TabItem>
      <TabItem label="Cursor">
        ```text
@@ -173,9 +176,9 @@ The other two files are `proposal.md` (why, what changes, impact) and `design.md
      </TabItem>
      <TabItem label="Gemini CLI">
        ```text
-       /opsx:archive
+       Use the openspec-archive-change skill.
        ```
-       Written from the docs, not run.
+       Tested headless with Gemini CLI 0.62.0. With the `openspec init --tools gemini` commands, `/opsx:archive` also works (not tested interactively).
      </TabItem>
      <TabItem label="Cursor">
        ```text

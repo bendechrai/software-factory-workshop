@@ -83,7 +83,8 @@ The harness hook that stops an agent skipping the git hooks:
          { "name": "block-no-verify", "type": "command", "command": "$GEMINI_PROJECT_DIR/.agents/hooks/block-no-verify.sh", "timeout": 10000 }
        ] } ] } }
        ```
-       The script reads both the top-level `command` and `tool_input.command` shapes, so it needs no change for the shape. Gemini's own input shape has not been tested here. Written from the Gemini docs; not run while building this guide.
+       Gemini's hook input has the same `tool_name` and `tool_input.command` shape as Claude Code's, so `block-no-verify.sh` works unchanged. The hook must be trusted: set `GEMINI_CLI_TRUST_WORKSPACE=true` or accept the prompt in an interactive session.
+       Tested with Gemini CLI 0.62.0 (headless, `--approval-mode yolo`): the hook loaded and `git commit --no-verify` was blocked. The interactive trust prompt was not run.
      </TabItem>
      <TabItem label="Cursor">
        Create `.cursor/hooks.json`:

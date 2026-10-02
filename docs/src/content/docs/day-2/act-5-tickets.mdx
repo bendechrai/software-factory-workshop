@@ -125,7 +125,7 @@ In this act you play two roles in one session. You are the human reviewer, and y
        ```json
        { "mcpServers": { "agentboard": { "command": "agentboard", "args": ["mcp"] } } }
        ```
-       Written from the Gemini docs, not run.
+       Tested with Gemini CLI 0.62.0: both this form and the `npx -y @bendechrai/agentboard mcp` form loaded, and `board_list` returned the tickets. Interactive `/mcp list` was not run.
      </TabItem>
      <TabItem label="Cursor">
        Create `.cursor/mcp.json`:
@@ -137,7 +137,7 @@ In this act you play two roles in one session. You are the human reviewer, and y
      </TabItem>
    </Tabs>
 
-   A tool is named `board_` plus the command, such as `board_claim` or `board_handoff`. The actor is the `as` argument. Skip this step if you would rather stay in the shell. Nothing later needs it.
+   A tool is named `board_` plus the command, such as `board_claim` or `board_handoff`. In Gemini CLI the tool name is prefixed: `mcp_agentboard_board_claim`, `mcp_agentboard_board_list`. The actor is the `as` argument. Skip this step if you would rather stay in the shell. Nothing later needs it.
 
 4. **Watch the board.** Open a second window beside your harness and leave it open for the rest of the act.
 

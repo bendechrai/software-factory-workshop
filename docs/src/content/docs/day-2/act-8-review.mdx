@@ -51,7 +51,8 @@ Each harness wires the reviewer in its own way. Pick a model that differs from t
     `.codex/agents/reviewer.toml` with a `model` that differs from the implementer's. On OpenRouter, model ids carry the provider prefix, and `gpt-5.5-codex` is not a valid id there. The template uses `anthropic/claude-sonnet-5.5`: a different vendor from the implementer (`openai/gpt-5.3-codex`), and a model that accepts images, so it can read screenshots. The first real run with a text-only model could not. Tested with Codex CLI 0.160.0.
   </TabItem>
   <TabItem label="Gemini CLI">
-    `.gemini/agents/reviewer.md`. The template names `gemini-2.5-pro`. Written from the docs, not run.
+    `.gemini/agents/reviewer.md`. The template names `gemini-3.1-flash-lite-preview`, and the implementer template names `gemini-3-flash-preview`, so the two differ. `gemini-2.5-pro` is closed to new keys (404), and a free key has no `gemini-3.1-pro`. With a paid key you can choose stronger models; the rule is only that they differ. Gemini asks you to acknowledge each project agent the first time it is used (an interactive prompt that headless runs cannot answer).
+    Tested with Gemini CLI 0.62.0: the agent loads after acknowledgement and delegation by name works. The prompt itself and the real reviewer body were not run.
   </TabItem>
   <TabItem label="Cursor">
     `.cursor/agents/reviewer.md`, with `model:` set to an id from `agent models` that differs from the implementer's. The template names `gpt-5.5-medium`, which suits a Claude implementer; if your implementer is a GPT model, choose a Claude id from the list instead. `gpt-5` is not a valid id. Named models need a paid Cursor plan; on the Free plan only `auto` works. Subagents in `.cursor/agents` and `.claude/agents` both load, and `.cursor` wins a name clash. Tested with Cursor CLI 2026.10.01 (subagent loading only; the real reviewer body and named models were not run).
