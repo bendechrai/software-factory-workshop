@@ -1,0 +1,120 @@
+---
+title: "Act 1: the sandbox and the vibe"
+description: Start every attendee from the same empty harness, give it one loose prompt, and look at how different the results are.
+sidebar:
+  order: 1
+  label: "Act 1: the sandbox and the vibe"
+---
+
+import { Tabs, TabItem, Steps, Aside } from '@astrojs/starlight/components';
+
+**The idea.** A coding agent with no instructions will build you something. It will be different from what the person next to you got, and different from what you would get if you ran it again. That is not a flaw in the model. It is what happens when the only specification is one sentence.
+
+**Time:** about 60 minutes. 15 for the talk, 30 for the build, 15 to compare.
+
+## The talk
+
+Three things to say before anyone types.
+
+1. **What a factory is.** The four stations: isolate, build, prove, ship. Why the idea is harness and model agnostic. See [What a software factory is](/software-factory-workshop/start/what-a-factory-is/).
+2. **Why we start with a sandbox.** Everyone in the room has a different harness configuration: skills they wrote, plugins they installed, memory the harness has accumulated. For the comparison in this act to mean anything, everyone has to start from nothing. For the rest of the workshop, it means the only guardrails in play are the ones you add on purpose.
+3. **Why we start by vibe coding.** You cannot appreciate a guardrail until you have seen what happens without it. Every act after this one adds one thing and shows what changed. This act is the baseline.
+
+## Hands-on
+
+<Steps>
+
+1. **Make an empty folder and start your sandboxed harness in it.** You set the alias up in [Before you arrive](/software-factory-workshop/start/before-you-arrive/).
+
+   ```bash
+   mkdir hop && cd hop
+   git init -b main
+   ```
+
+   <Tabs syncKey="harness">
+     <TabItem label="Claude Code">
+       ```bash
+       claude-workshop
+       ```
+       Confirm there is nothing loaded: type `/skills` and `/mcp`. Both should be empty.
+     </TabItem>
+     <TabItem label="Codex CLI">
+       ```bash
+       codex-workshop
+       ```
+       Type `/mcp` to confirm no servers are loaded.
+     </TabItem>
+     <TabItem label="Gemini CLI">
+       ```bash
+       gemini-workshop
+       ```
+       Type `/mcp list` and `/skills list` to confirm both are empty.
+     </TabItem>
+     <TabItem label="Cursor">
+       ```bash
+       agent-workshop
+       ```
+       Run `agent-workshop mcp list` in another terminal to confirm no servers are loaded.
+     </TabItem>
+   </Tabs>
+
+2. **Give it this prompt, exactly as written.** Do not add anything. Do not answer questions it asks with anything more than "you choose".
+
+   ```text
+   Build me a short link service called hop. I paste a long URL, it gives me a short link, and visiting the short link redirects to the long URL. Show how many times each link was clicked.
+   ```
+
+3. **When it says it is done, run it and try it.** Paste a link, click the short one, and check the count went up. If it does not work, tell the agent so and let it fix it. Note how many turns that took.
+
+4. **Commit what you have and tag it.** You will come back to this point.
+
+   ```bash
+   git add -A
+   git commit -m "Vibe-coded hop from one prompt"
+   git tag act-1
+   ```
+
+5. **Take a screenshot of the home page.** Playwright can do it from the command line; replace the port with yours.
+
+   ```bash
+   npx playwright screenshot --viewport-size=1280,800 http://localhost:3000 screenshot.png
+   ```
+
+</Steps>
+
+## What you see
+
+Now compare with the people around you. Stack, folder layout, port, how data is stored, whether there are tests, what the page looks like.
+
+When this guide was built, the prompt above was given to three agents at the same time, each with a different model and no instructions. Here is what came back.
+
+| | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| Dependencies | none | none at runtime, ESLint for development | Express |
+| Layout | flat files | `src/` with an app factory | flat files |
+| Storage | SQLite file in the working folder | SQLite file in `data/` | SQLite file in `data/` |
+| Port | 4123 | 4242 | 4310 |
+| Lines of code | 279 | 444 | 721 |
+| Tests | 1, end to end | 5, with an in-memory database | 5, with an in-memory database |
+| Extras | | copy button | copy button, auto-refresh, dark theme |
+
+![Run 1: a light page with a single input and a table](../../../assets/act-1/run-1.png)
+![Run 2: a light page with a green accent and a copy button](../../../assets/act-1/run-2.png)
+![Run 3: a dark page with a green heading and a links table](../../../assets/act-1/run-3.png)
+
+All three work. All three pass their own tests. None of them share an API shape, a folder layout or a look. If you asked an agent to add a feature to all three, it would have to learn each one from scratch.
+
+<Aside type="note" title="An honest note on divergence">
+These three runs all came from models in the same family, and they still disagreed on framework, layout and style. A room full of different harnesses and models diverges more. The point stands either way: nothing about the result was decided by you.
+</Aside>
+
+## What to take into act 2
+
+Keep your `hop` folder. Act 2 adds the first guardrail to it: a file that tells the agent how to work here, and a skill that says what the code should look like. The feature you add then will land the way you want it, and you will be able to say why.
+
+If your build did not work and you would rather start from a known point, the demo repository at the `act-1` tag is run 3 above.
+
+```bash
+git clone https://github.com/bendechrai/hop-demo.git hop
+cd hop && git checkout act-1
+```

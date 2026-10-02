@@ -1,0 +1,84 @@
+---
+title: The four harnesses side by side
+description: Where each harness reads instructions, skills, agents, hooks and MCP servers, and how to run it headless. Checked against the vendor docs on 1 October 2026.
+sidebar:
+  order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Everything in this workshop runs on any of these four. This page is the lookup table for the places where they differ. Versions and facts were checked against each vendor's documentation on 1 October 2026; the exact pages are listed at the bottom.
+
+<Aside type="caution">
+Only the Claude Code column was exercised end to end while building this guide. The other three columns come from their documentation and are marked as such throughout.
+</Aside>
+
+## The sandbox
+
+| | Claude Code | Codex CLI | Gemini CLI | Cursor CLI |
+|---|---|---|---|---|
+| Fresh home | `CLAUDE_CONFIG_DIR=<dir> claude` | `CODEX_HOME=<dir> codex` (directory must exist) | `GEMINI_CLI_HOME=<parent> gemini` (creates `<parent>/.gemini`) | `CURSOR_CONFIG_DIR=<dir> agent` (scope not fully documented) |
+| Sign in again | `claude auth login` | `codex login` | first run prompts | first run prompts |
+| Still loads | project `AGENTS.md`, `.claude/`, `.mcp.json` | project files, and `~/.agents/skills` | project `.gemini/` | project `.cursor/` |
+
+## One instruction file: AGENTS.md
+
+| Harness | Reads `AGENTS.md`? | Condition |
+|---|---|---|
+| Codex CLI | Yes, it is the native file | Always, from the repository root down |
+| Cursor | Yes | Root and nested folders; the CLI also reads a root `CLAUDE.md` |
+| Claude Code | Yes, from 2.1.277 | Only when there is no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` in the folder or any folder above it |
+| Gemini CLI | Not by default | Commit `.gemini/settings.json` containing `{"context": {"fileName": ["AGENTS.md", "GEMINI.md"]}}` |
+
+So the demo repository has one `AGENTS.md`, no `CLAUDE.md`, and a two-line `.gemini/settings.json`. That is the whole cross-harness story for instructions.
+
+## Skills
+
+| Harness | Project skills folder | Invoke |
+|---|---|---|
+| Codex CLI | `.agents/skills/<name>/SKILL.md` | `$name` in a prompt, or picked by description |
+| Cursor | `.agents/skills/`, `.cursor/skills/`, and for compatibility `.claude/skills/` | `/name` |
+| Gemini CLI | `.agents/skills/` or `.gemini/skills/` | `/name` |
+| Claude Code | `.claude/skills/<name>/SKILL.md` | `/name`, or picked by description |
+
+`.agents/skills/` is read by three of the four. The demo keeps skills there and gives Claude Code a symbolic link, `.claude/skills -> ../.agents/skills`. The `SKILL.md` format is the same everywhere: YAML frontmatter with `name` and `description`, then the instructions.
+
+## Subagents and worktrees
+
+| | Claude Code | Codex CLI | Gemini CLI | Cursor CLI |
+|---|---|---|---|---|
+| Subagent definitions | `.claude/agents/*.md` | `.codex/agents/*.toml` | `.gemini/agents/*.md` | `.cursor/agents/*.md` (also reads `.claude/agents/`) |
+| Pick a model per agent | `model:` in frontmatter | `model` in the TOML | `model` in frontmatter | `model` in frontmatter |
+| Run in parallel | Yes, up to 20 at once | Yes, on request | Not documented | Yes, several Task calls in one message |
+| Native worktree | `claude -w <name>`, or `isolation: worktree` on a subagent | Desktop app only; use `git worktree add` and `codex -C <dir>` | `experimental.worktrees: true`, then `gemini -w <name>` | `agent -w <name> --worktree-base main` |
+
+## Hooks
+
+| | Claude Code | Codex CLI | Gemini CLI | Cursor CLI |
+|---|---|---|---|---|
+| File | `.claude/settings.json` under `hooks` | `.codex/hooks.json` | `.gemini/settings.json` under `hooks` | `.cursor/hooks.json` with `"version": 1` |
+| Before a tool runs | `PreToolUse` | `PreToolUse` | `BeforeTool` | `preToolUse`, `beforeShellExecution` |
+| When the agent stops | `Stop` | `Stop` | `AfterAgent` | `stop` |
+| Timeout unit | seconds | seconds | milliseconds | not documented |
+
+The workshop's gates are git hooks, not harness hooks, precisely so they work the same in all four. Harness hooks appear once, in act 3, to stop an agent bypassing the git hooks.
+
+## Headless, for the orchestrator loop
+
+| Harness | Command | Model flag | Let it edit files |
+|---|---|---|---|
+| Claude Code | `claude -p "<prompt>" --output-format json` | `--model sonnet` | `--permission-mode acceptEdits` |
+| Codex CLI | `codex exec "<prompt>" --json` | `-m <model>` | `--sandbox workspace-write` |
+| Gemini CLI | `gemini -p "<prompt>" -o json` | `-m <model>` | `--approval-mode auto_edit` |
+| Cursor CLI | `agent -p "<prompt>" --output-format json` | `--model <model>` | `--force` |
+
+<Aside type="tip">
+`-p` means prompt in three of the four and profile in Codex. Codex takes the prompt as a plain argument.
+</Aside>
+
+## Where this came from
+
+- Claude Code: https://code.claude.com/docs/en/env-vars, https://code.claude.com/docs/en/memory, https://code.claude.com/docs/en/skills, https://code.claude.com/docs/en/sub-agents, https://code.claude.com/docs/en/worktrees, https://code.claude.com/docs/en/hooks, https://code.claude.com/docs/en/headless
+- Codex CLI: https://learn.chatgpt.com/docs/config-file/environment-variables, https://learn.chatgpt.com/docs/agent-configuration/agents-md, https://learn.chatgpt.com/docs/build-skills, https://learn.chatgpt.com/docs/agent-configuration/subagents, https://learn.chatgpt.com/docs/hooks, https://learn.chatgpt.com/docs/non-interactive-mode
+- Gemini CLI: https://github.com/google-gemini/gemini-cli/tree/main/docs (configuration, gemini-md, skills, subagents, git-worktrees, hooks, headless)
+- Cursor: https://cursor.com/docs/cli/reference/configuration, https://cursor.com/docs/rules, https://cursor.com/docs/skills, https://cursor.com/docs/subagents, https://cursor.com/docs/hooks, https://cursor.com/docs/cli/headless

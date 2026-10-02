@@ -1,0 +1,140 @@
+---
+title: Before you arrive
+description: What to install and check before the workshop starts, so day one begins with building rather than downloading.
+---
+
+import { Tabs, TabItem, Steps, Aside } from '@astrojs/starlight/components';
+
+Do this the day before. It takes about twenty minutes, most of it waiting on downloads. Everything here is checked with one command at the end.
+
+## What you need
+
+<Steps>
+
+1. **A coding harness you already use.** Claude Code is the worked path in this guide. Codex CLI, Gemini CLI and Cursor are covered in tabs wherever a step differs. You need a signed-in account for whichever one you bring.
+
+   <Tabs syncKey="harness">
+     <TabItem label="Claude Code">
+       ```bash
+       curl -fsSL https://claude.ai/install.sh | bash
+       claude --version
+       ```
+       Any build from 2.1.277 onwards. That is the version that reads `AGENTS.md` natively, which the workshop relies on.
+     </TabItem>
+     <TabItem label="Codex CLI">
+       ```bash
+       npm install -g @openai/codex
+       codex --version
+       ```
+     </TabItem>
+     <TabItem label="Gemini CLI">
+       ```bash
+       npm install -g @google/gemini-cli
+       gemini --version
+       ```
+       Use npm, not Homebrew. The Homebrew formula was several releases behind when this was written.
+     </TabItem>
+     <TabItem label="Cursor">
+       ```bash
+       curl https://cursor.com/install -fsS | bash
+       agent --version
+       ```
+       The command-line agent is called `agent`. The workshop uses it rather than the editor, so that every step is a command you can copy.
+     </TabItem>
+   </Tabs>
+
+2. **Node.js 24 or later.** The demo app runs TypeScript directly with Node's built-in type stripping and stores data with Node's built-in SQLite, so there is nothing to compile and no native modules.
+
+   ```bash
+   node --version
+   ```
+
+3. **git, and the GitHub CLI signed in.** Day two uses pull requests, and the ticket board closes tickets by asking GitHub whether the pull request merged.
+
+   ```bash
+   git --version
+   gh auth status
+   ```
+
+4. **gitleaks**, which the commit gate uses to stop a secret reaching the repository.
+
+   ```bash
+   brew install gitleaks        # macOS
+   # Linux: download a release from https://github.com/gitleaks/gitleaks/releases
+   gitleaks version
+   ```
+
+5. **A browser for Playwright.** The push gate and the evidence step drive the app in a real browser. Installing the browser once now saves a long download during the workshop.
+
+   ```bash
+   npx -y playwright@latest install chromium
+   ```
+
+6. **OpenSpec and agentboard.** Both are run with `npx`, so there is nothing to install. Running them once now caches the download.
+
+   ```bash
+   npx -y @fission-ai/openspec@latest --version
+   npx -y @bendechrai/agentboard@latest version
+   ```
+
+   <Aside type="note">
+   agentboard is published from https://github.com/bendechrai/agentboard. If the `npx` command cannot find the package, clone that repository, run `npm ci && npm run build && npm link`, and the `agentboard` command is on your path. The commands in this guide are the same either way.
+   </Aside>
+
+</Steps>
+
+## Make the sandbox
+
+Act 1 starts every attendee from the same place: your own harness, with none of the skills, plugins, MCP servers and memory you have gathered. You do not lose any of that. You point the harness at a fresh configuration directory for the two days and go back to your normal one afterwards.
+
+<Tabs syncKey="harness">
+  <TabItem label="Claude Code">
+    ```bash
+    mkdir -p ~/.claude-workshop
+    alias claude-workshop='CLAUDE_CONFIG_DIR=~/.claude-workshop claude'
+    claude-workshop auth login
+    claude-workshop auth status
+    ```
+    `CLAUDE_CONFIG_DIR` moves everything that normally lives in `~/.claude`, including your login, so the first run asks you to sign in again. The status command should print `"loggedIn": true` and a `configDirectory` ending in `.claude-workshop`.
+
+    Project files in a repository (`AGENTS.md`, `.claude/`, `.mcp.json`) still load. Only your home directory configuration is swapped out, which is exactly what you want.
+  </TabItem>
+  <TabItem label="Codex CLI">
+    ```bash
+    mkdir -p ~/.codex-workshop
+    alias codex-workshop='CODEX_HOME=~/.codex-workshop codex'
+    codex-workshop login
+    ```
+    The directory must exist before Codex starts; it does not create it. Your login lives inside `CODEX_HOME`, so sign in again. One thing does not move: personal skills in `~/.agents/skills` still load. If you have any, rename that folder for the two days.
+  </TabItem>
+  <TabItem label="Gemini CLI">
+    ```bash
+    mkdir -p ~/gemini-workshop
+    alias gemini-workshop='GEMINI_CLI_HOME=~/gemini-workshop gemini'
+    gemini-workshop
+    ```
+    `GEMINI_CLI_HOME` is the parent of the `.gemini` folder, not the folder itself. The first run creates `~/gemini-workshop/.gemini` and asks you to sign in.
+  </TabItem>
+  <TabItem label="Cursor">
+    ```bash
+    mkdir -p ~/.cursor-workshop
+    alias agent-workshop='CURSOR_CONFIG_DIR=~/.cursor-workshop agent'
+    agent-workshop
+    ```
+    Cursor documents `CURSOR_CONFIG_DIR` as the location of the CLI configuration file. Whether it also moves your MCP servers, hooks and skills is not documented, so check with `agent-workshop mcp list` once it starts. If you still see your servers, disable them for the two days with `agent mcp disable <name>`.
+  </TabItem>
+</Tabs>
+
+Put the alias in your shell profile so it survives a new terminal. Everywhere this guide says "start your harness", it means this alias.
+
+## Check everything at once
+
+Clone the workshop repository and run the check script. It prints one line per tool.
+
+```bash
+git clone https://github.com/bendechrai/software-factory-workshop.git
+cd software-factory-workshop
+bin/check-setup.sh
+```
+
+If every line says `ok`, you are ready.
