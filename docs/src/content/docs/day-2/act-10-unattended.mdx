@@ -36,7 +36,7 @@ import codexConfig from '../../../../../templates/act-10/.agents/loop/codex-conf
 
 5. **The two-tier rule.** This comes from the author's holodeck project. Never make the factory the only way to change the factory. The loop, the skill and the board are the fast path. The manual path must keep working beside them. A person can edit, run `npm run verify`, commit and push with no agent and no loop. So the loop changes product code through tickets and PRs, and changes to the loop itself are made by a person.
 
-6. **Cost.** An unattended loop is where cost gets away from you. Claude Code has a per-run budget flag, `--max-budget-usd`, and the default command uses it with a budget of $5 a run. The other harnesses have no such flag in this loop, so the iteration and time caps are your only control: keep `MAX_ITERATIONS` small. When the loop ends it prints the ledger command for its own time window. You run it and read the cost.
+6. **Cost.** An unattended loop is where cost gets away from you. Claude Code has a per-run budget flag, `--max-budget-usd`, and the default command uses it with a budget of $5 a run. The other harnesses have no such flag in this loop, so the iteration and time caps are your only control: keep `MAX_ITERATIONS` small. The Claude ledger reads Claude Code logs only. It cannot see Codex or OpenRouter spend. With Claude Code, the loop prints the ledger command for its own time window, and you run it. With Codex, read the OpenRouter usage lines the loop writes to `loop.log`.
 
 ## The files
 
@@ -56,12 +56,14 @@ Use your `hop` repository from act 9.
 
 <Steps>
 
-1. **Copy the templates in.** Take everything in `templates/act-10/` and keep the paths: `bin/factory-loop.sh`, `bin/fake-harness.sh`, `bin/factory-loop.test.sh`, `.agents/loop/prompt.md` and `.agents/loop/README.md`. Add these three lines to `.gitignore`, then commit:
+1. **Copy the templates in.** Take everything in `templates/act-10/` and keep the paths: `bin/factory-loop.sh`, `bin/fake-harness.sh`, `bin/factory-loop.test.sh`, `.agents/loop/prompt.md`, `.agents/loop/README.md`, `.agents/loop/codex-config.example.toml` and `.codex/agents/reviewer.toml`. Add the lines in `.gitignore-additions` to your `.gitignore` (the three loop files, the ledger cache and the reviewer briefs folder), then commit:
 
    ```text
    .agents/loop/runs/
    .agents/loop/STOP
    .agents/loop/loop.log
+   .ledger-cache.json
+   .agents/review/briefs/
    ```
 
 2. **Read the prompt.** Open `.agents/loop/prompt.md`. It is the whole instruction the loop gives each fresh session. Everything else it needs, it must find on the board and in the repo.
@@ -80,19 +82,21 @@ Use your `hop` repository from act 9.
    bash bin/factory-loop.test.sh
    ```
 
-   You should see 15 lines that start with PASS, and `15 passed, 0 failed` at the end. They are listed in the next section.
+   You should see 19 lines that start with PASS, and `19 passed, 0 failed` at the end. They are listed in the next section.
 
 5. **Propose a small change and import its tickets.** Pick something small, such as a tiny addition to the home page. Use the `openspec-propose` flow, run `openspec validate <change> --strict`, then `agentboard import-change <change> --as orch`. Keep it to one or two task groups. You own the spec, as in act 9.
 
    <Aside type="caution" title="Read this before the next step">
-   The loop and every guard are tested against the fake harness (15 cases). Codex CLI has run headless end to end for single tasks, through OpenRouter, outside the sandbox trade-off described in the Codex tab. A full unattended loop run has not been done yet, and this page will be updated with its results. The `HARNESS_CMD` lines for Gemini CLI and Cursor were written from their docs, not run.
+   The loop has now run for real once, with Codex CLI through OpenRouter. That run proved the loop and its guards ended normally ("board empty", exit 0), that headless orchestration works end to end, and that merges happened only under the gates: exact-head preflight and a posted review PASS before each one.
 
-   The default `HARNESS_CMD` also carries an `--allowedTools` list, so a headless session can run the shell commands the orchestrate skill needs (`git`, `gh`, `agentboard`, `npm`, `npx`, `node`, `openspec`) and the file tools. Without it, `acceptEdits` does not approve shell commands, and a headless session would stall on the first one. This permission set is untested in a real loop. Check the first iteration's `.err` and output files in `.agents/loop/runs/` for refused tools.
+   It did not prove the review step. The configured reviewer worked as designed for only part of the run. The fixes made afterwards (listed in "What you see") have not had a second real run yet. The `HARNESS_CMD` lines for Gemini CLI and Cursor were written from their docs, not run.
+
+   The default Claude Code `HARNESS_CMD` also carries an `--allowedTools` list, so a headless session can run the shell commands the orchestrate skill needs (`git`, `gh`, `agentboard`, `npm`, `npx`, `node`, `openspec`) and the file tools. Without it, `acceptEdits` does not approve shell commands, and a headless session would stall on the first one. That permission set is untested in a real loop. Check the first iteration's `.err` and output files in `.agents/loop/runs/` for refused tools.
 
    Keep the limits small, watch the first iteration, and keep the stop file in mind.
    </Aside>
 
-6. **Run the real loop with your harness.** Keep the limits small for a first run. The default command is Claude Code, so with Claude Code you only need the limits:
+6. **Run the real loop with your harness, from a script file.** Do not paste a long multi-line command into the terminal. On the first real run, the paste was mangled by the terminal, and a placeholder in angle brackets was read as a redirect. Put the command in a file, read it once, and run the file. A minimal script for Codex through OpenRouter is below the tabs. Keep the limits small for a first run. The default command is Claude Code, so with Claude Code you only need the limits:
 
    ```bash
    MAX_ITERATIONS=3 MAX_MINUTES=60 bin/factory-loop.sh
@@ -108,32 +112,28 @@ Use your `hop` repository from act 9.
        This is the default. It is the only one with a per-run budget flag. The `--allowedTools` list has no spaces, because the loop splits the command on spaces, and it comes before the other flags, because the flag takes a list and would otherwise swallow the prompt. This permission set is untested in a real loop.
      </TabItem>
      <TabItem label="Codex CLI">
-       The setup and smoke tests below were run. The full loop run with Codex is pending.
+      The first real loop run used this setup. See "What you see" for what happened.
 
-       Codex CLI 0.160.0 ran headless through OpenRouter with `npx -y @openai/codex`. Codex only speaks the Responses API, and OpenRouter serves it. Give Codex its own home folder, so the loop's config does not touch your normal one:
+      Codex CLI 0.160.0 ran headless through OpenRouter with `npx -y @openai/codex`. Codex only speaks the Responses API, and OpenRouter serves it. Give Codex its own home folder, so the loop's config does not touch your normal one:
 
-       ```bash
-       mkdir -p ~/.codex-loop
-       cp .agents/loop/codex-config.example.toml ~/.codex-loop/config.toml
-       ```
+      ```bash
+      mkdir -p ~/.codex-loop
+      cp .agents/loop/codex-config.example.toml ~/.codex-loop/config.toml
+      ```
 
-       Then replace `<absolute repo path>` in the last section with your repo's absolute path. This is the config:
+      Then replace `<absolute repo path>` in the last section with your repo's absolute path. This is the config:
 
-       <Code code={codexConfig} lang="toml" title=".agents/loop/codex-config.example.toml" />
+      <Code code={codexConfig} lang="toml" title=".agents/loop/codex-config.example.toml" />
 
-       Run the loop with the key set for this command only, and `CODEX_HOME` pointing at that folder:
+      The run script (below the tabs) sets the key for that one command and points `CODEX_HOME` at the folder. Codex takes the prompt as a plain argument, and its `-p` means profile, so it is not used. `codex exec` waits on stdin when it is not a terminal, so the loop passes `/dev/null` (a test proves it). Codex still prints `Reading additional input from stdin...`. That line is harmless. A multi-word `HARNESS_CMD` with `-C` and a path is parsed correctly (also tested).
 
-       ```bash
-       OPENROUTER_API_KEY=<your key> CODEX_HOME=~/.codex-loop \
-       HARNESS_CMD="npx -y @openai/codex exec --json -C <absolute repo path>" \
-       MAX_ITERATIONS=3 MAX_MINUTES=150 bin/factory-loop.sh
-       ```
+      **Models used.** The config sets the orchestrator to `openai/gpt-5.6-sol`. The implementer agent ran on `openai/gpt-5.3-codex`. The reviewer agent in `.codex/agents/reviewer.toml` is now `anthropic/claude-sonnet-5.5`, a different vendor with image input.
 
-       Codex takes the prompt as a plain argument, and its `-p` means profile, so it is not used. `codex exec` waits on stdin when it is not a terminal, so the loop passes `/dev/null` (a test proves it), and a multi-word `HARNESS_CMD` with `-C <path>` is parsed correctly (also tested).
+      **The sandbox trade-off.** Smoke tests were run on `openai/gpt-5.6-sol` ($2 in, $10 out per million tokens) at about $0.05 per short turn. In Codex's `workspace-write` sandbox on macOS, `gh`, `agentboard` and `npm ci` worked, with npm's cache redirected inside the sandbox. Git did not work out of the box: `.git` is read-only there, so `git commit` failed with "Unable to create .../.git/index.lock: Operation not permitted", and `git worktree add` failed the same way. To use the sandbox, add the repo's `.git` folder and the worktrees folder to `writable_roots` under `[sandbox_workspace_write]`.
 
-       **What ran.** Smoke tests: a file edit plus `git status`, then `gh api user` and `npm view`, at about $0.05 per short turn on `openai/gpt-5.6-sol` ($2 in, $10 out per million tokens). Inside Codex's `workspace-write` sandbox on macOS, `git fetch`, `git worktree add`, commits, `npm ci`, `agentboard` and `gh` worked. npm's cache had to be redirected inside the sandbox.
+      Even then, Chromium could not start in that sandbox (mach port permission denied), so the browser test, the evidence capture and the pre-push preflight fail. `git push` likely fails on the keychain credential helper, but that is unconfirmed. The only way found to run all the gates was `sandbox_mode = "danger-full-access"`, and the real run used it. With `approval_policy = "never"`, Codex then acts unattended with your full user permissions. The example config says so. Run it only on a machine and account where you accept that.
 
-       **The sandbox trade-off.** Chromium could not start in that sandbox (mach port permission denied), so the browser test, the evidence capture and the pre-push preflight fail. `git push` likely fails on the keychain credential helper, but that is unconfirmed. The only way found to run the gates was `sandbox_mode = "danger-full-access"`. With `approval_policy = "never"`, Codex then acts unattended with your full user permissions. The example config says so. Run it only on a machine and account where you accept that.
+      The danger is real, not abstract. In the real run, an implementer put markdown with backticks inside a double-quoted shell string, twice. The shell ran the backticked text as commands (`git checkout`, `npm run verify` and others). Nothing broke that time. The implementer now has a rule to pass PR bodies with `--body-file`.
      </TabItem>
      <TabItem label="Gemini CLI">
        ```bash
@@ -149,6 +149,32 @@ Use your `hop` repository from act 9.
      </TabItem>
    </Tabs>
 
+   This is a minimal run script for Codex through OpenRouter. Save it outside the repo (for example in your home folder) as `run-codex-loop.sh`. The words in capitals are for you to replace. They are plain words, so the shell does not mistake them for a redirect. Do not commit this file, because it holds your key.
+
+   ```bash
+   #!/usr/bin/env bash
+   set -eu
+
+   REPO=YOUR_REPO_PATH
+   export OPENROUTER_API_KEY=YOUR_OPENROUTER_KEY
+   export CODEX_HOME="$HOME/.codex-loop"
+   export HARNESS_CMD="npx -y @openai/codex exec --json -C $REPO"
+   export MAX_ITERATIONS=3 MAX_MINUTES=150 SLEEP_SECONDS=30 MAX_FAILURES=2
+
+   cd "$REPO"
+   rm -f .agents/loop/STOP
+
+   echo "== Dry run (calls no harness)"
+   bin/factory-loop.sh --dry-run
+
+   printf 'Start the real loop now? [y/N] '
+   read -r answer
+   [ "$answer" = "y" ] || exit 0
+   bin/factory-loop.sh
+   ```
+
+   Run it with `bash run-codex-loop.sh`. It does the dry run, asks, then starts the loop. Because the key is exported, the loop writes the OpenRouter usage lines to `loop.log`.
+
    Run `agentboard serve` beside it and watch the board. Note the time the loop started.
 
 7. **Stop it with the STOP file.** From another terminal:
@@ -159,7 +185,7 @@ Use your `hop` repository from act 9.
 
    The run in progress finishes, and the loop ends before the next one. Remove the file afterwards: `rm .agents/loop/STOP`. If a run was cut off by Ctrl-c, run `agentboard health` to find tickets left claimed.
 
-8. **Run the ledger for the loop window.** The loop printed the command when it ended. Run it from your `hop` folder (for example `~/workshop/hop`), with the loop's start time. The ledger finds the project from the current folder.
+8. **Read the cost.** With Codex, the Claude ledger cannot see the spend (see the cost note below). Read the OpenRouter usage lines in `.agents/loop/loop.log`: the difference between the before and after values is the run's cost. With Claude Code, run the ledger for the loop window. The loop printed the command when it ended. Run it from your `hop` folder (for example `~/workshop/hop`), with the loop's start time. The ledger finds the project from the current folder.
 
    ```bash
    node ../software-factory-workshop/tools/ledger/ledger.mjs --since <ISO time the loop started> --by agent
@@ -173,7 +199,7 @@ Use your `hop` repository from act 9.
 
 ### Running the loop with another vendor's harness
 
-The loop is harness agnostic: it runs one command with the prompt as the last argument and reads the exit code. To prove that outside the harness this guide was built in, Codex CLI was run through OpenRouter. See the Codex tab for the setup and what ran.
+The loop is harness agnostic: it runs one command with the prompt as the last argument and reads the exit code. To prove that outside the harness this guide was built in, Codex CLI was run through OpenRouter. See the Codex tab for the setup, and "What you see" for the real run.
 
 If macOS shows a security warning when Codex first runs, the package was checked. Every executable in the npm package is signed by OpenAI's Developer ID (team 2DC432GLL2), has the hardened runtime and no quarantine flag, and the system log showed no malware detection. If macOS says it cannot check the app, use System Settings, Privacy and Security, Open Anyway, or install it once with `brew install --cask codex` or `npm install -g @openai/codex`. If it says the app will damage your computer, do not override it.
 
@@ -181,29 +207,109 @@ If macOS shows a security warning when Codex first runs, the package was checked
 
 ## What you see
 
+### The first real run
+
+The author ran the loop on a laptop with Codex CLI through OpenRouter, with the sandbox off. This is the terminal, from the run script (the home path is shortened to `~`):
+
+```text
+ben@laptop hop % bash run-codex-loop.sh
+Trust entry:
+27:[projects."~/Projects/software-factory-workshop/demo/hop"]
+
+== Dry run (calls no harness)
+[factory-loop] dry run: no harness will be called
+[factory-loop] harness:  npx -y @openai/codex exec --json -C ~/Projects/software-factory-workshop/demo/hop <prompt from ~/Projects/software-factory-workshop/demo/hop/.agents/loop/prompt.md>
+[factory-loop] limits:   3 iterations, 150 minutes, 30s cool-down, 2 failures in a row
+[factory-loop] open tickets: 3, blocked: 0
+[factory-loop] guards pass: a real run would start iteration 1
+
+Start the real loop now? [y/N] y
+[factory-loop] iteration 1: 3 open tickets, output in ~/Projects/software-factory-workshop/demo/hop/.agents/loop/runs/20261002T165943Z-i1.json
+[factory-loop] iteration 1 finished: exit 0, 0 open tickets
+[factory-loop] board empty, exiting
+[factory-loop] cost of this loop (run from the repo; put CLAUDE_CONFIG_DIR=~/.claude-workshop in front if you use the sandbox):
+[factory-loop]   cd ~/Projects/software-factory-workshop/demo/hop
+[factory-loop]   node "~/Projects/software-factory-workshop/tools/ledger/ledger.mjs" --since 2026-10-02T16:59:41Z --by agent
+```
+
+The run, in numbers:
+
+| Item | What happened |
+|---|---|
+| Iterations | 1, about 18 minutes (16:59:43 to 17:17:56 UTC) |
+| Tickets, before and after | 3 open, then 0 |
+| PR #9 | Group 3: a test that `/health` wins over a stored legacy health code. It has a red state, shown by moving the route and watching the test fail. |
+| PR #10 | Group 2: the destination column. A long label tag no longer pushes the URL out of view. |
+| PR #11 | Group 1: e2e workers set to 1, with a comment that says why. This stops the flaky stats test, which failed 1 run in 20 before. |
+| Send-backs | 1 genuine one: the first head of PR #10 did not follow design decision 3, so the orchestrator sent it back and merged the fixed one |
+| Rebase | PR #11 was rebased after PR #10 merged. The orchestrator checked it with `git range-diff`, ran preflight again and had it re-reviewed |
+| Gates | Exact-head preflight before each merge, a posted review PASS on the same head, then a ticket comment that the merge was made on the human's behalf |
+| Ended by | "board empty" (exit 0), after the change was archived |
+| Cost | About $4.73 on OpenRouter. 14.06M input tokens (13.40M of them cache reads, 95%) and 89.5K output |
+
+Tokens by model, input only: `openai/gpt-5.6-sol` (the orchestrator) 5.81M, `openai/gpt-5.3-codex` (three implementers) 5.84M, `z-ai/glm-5.3` 0.57M, `gpt-6-sol` 0.84M and `gpt-6-luna` 1.01M. The last three were reviewers.
+
+### What went wrong, and the fix for each
+
+A separate verifier checked the run strictly afterwards, on a different model, from the records. The end result was sound. The review step was not what the setup intended. Each finding is below, with the fix now in the templates.
+
+| Finding | How it showed up | Fix now in the templates |
+|---|---|---|
+| The configured reviewer got an empty brief | Codex sends spawn messages in a form only OpenAI models read. The `z-ai/glm-5.3` reviewer saw an empty task and had to guess the PR from the open list. | The orchestrator writes the brief to `.agents/review/briefs/pr-N.md` and to a ticket comment first (`templates/act-9/.agents/skills/orchestrate/SKILL.md` step 7, `templates/act-10/.agents/loop/prompt.md`, `.gitignore-additions`) |
+| That reviewer cannot read images | On PR #10 it failed twice with "No endpoints found that support image input" and posted nothing. | The reviewer is now `anthropic/claude-sonnet-5.5`, which takes images (`templates/act-10/.codex/agents/reviewer.toml`) |
+| The orchestrator swapped reviewers on its own | For PRs #10 and #11 it chose OpenAI reviewers itself: a different model, but the same vendor as the implementer, and not the configured agent. | If the configured reviewer fails twice, block the ticket for a human and never pick another (`prompt.md`, `SKILL.md` step 7) |
+| Nobody looked at a screenshot | The orchestrator checked pixel sizes only, yet wrote that the evidence "clearly shows" the fix. The fallback reviewers also said they had not inspected the images. | Open every evidence image and describe it in a ticket comment before accepting it (`SKILL.md` step 6, `prompt.md`) |
+| One spec scenario merged untested, and a cap changed without a word | The scenario "a long destination with a short label shows well beyond 240px" had no test. The tag cap was 55% where the design said 60%, and the PR did not say so. | Fixed by hand in PR #12, below. No template change. Add a rubric rule that a spec scenario with no test is a change request, not a nit. |
+| Backticks in a shell string ran as commands | With the sandbox off, markdown inside a quoted `gh pr create --body` string was executed by the shell. | Write PR bodies to a file and use `--body-file` (`templates/act-9/.claude/agents/implementer.md`, the evidence skill) |
+| Screenshot links went dead | All three PR bodies linked to branches that the squash merge deleted, so the images returned 404. | After the merge, rewrite each image link to the merge commit and check it returns 200 (`SKILL.md` step 9). The three loop PRs were repointed by hand. |
+| The run record lacked models and spawns | The run JSON shows no spawn calls and no model names. Only `~/.codex-loop` did. | The loop copies the session files of each iteration into `runs/<run>-sessions/` (`templates/act-10/bin/factory-loop.sh`) |
+| The cost hint showed $0 | The printed hint points at the Claude ledger. The run cost about $4.73 on OpenRouter. | The loop writes OpenRouter usage lines to `loop.log`, and the orchestrator reports cost from them (`factory-loop.sh`, `SKILL.md` step 13, `prompt.md`) |
+| Implementers started with the orchestrator's whole context | All three were spawned with `fork_turns: "all"`, so they inherited "You are the orchestrator" and a long history. | Spawn them with a fresh context and pass the brief only (`SKILL.md` step 5, `prompt.md`) |
+
+### The follow-up, PR #12
+
+PR #12 closed the two gaps the loop's own review let through. It added the missing width test. On the old CSS it failed with "Expected > 240, Received 240", and it passes now. It also set the tag cap to the design's 60%. The loop's implementer had used 55% without saying so. This PR was reviewed by the verifier, not by the loop.
+
+### Verification on main
+
+After the run, the verifier checked main (commit `014d6fd`) without changing anything:
+
+- `npm run verify` passed, with 84 tests.
+- `npm run e2e` passed 5 of 5 times on one worker (11 tests each). Five passes alone prove little: with a failure rate near 1 in 20, an unfixed suite would pass five times in a row about 77% of the time. The fix is credible because of how it works. With one worker, the files run in name order, and the export test deletes its link before the empty-database test runs.
+- The full preflight passed, with every gate green.
+- The board was empty and `agentboard health` was clean. One worktree was left, and the remote had only `main`.
+
 ### The test results
 
-`bash bin/factory-loop.test.sh` printed this when the guide was built, with the fake harness:
+`bash bin/factory-loop.test.sh` printed this with the fake harness:
 
 | # | Result | What it proves |
 |---|---|---|
-| 1 | PASS | drains 3 tickets, then exits 0 with "board empty" after 3 harness calls |
+| 1 | PASS | drains 3 tickets, then exits 0 with 'board empty' after 3 harness calls |
 | 2 | PASS | logs one `loop.log` line and one `runs/` file per iteration |
 | 3 | PASS | prints the ledger cost hint |
-| 4 | PASS | stops at `MAX_ITERATIONS` with a no-op harness (2 calls, exit 0) |
+| 4 | PASS | stops at `MAX_ITERATIONS` with noop (2 calls, exit 0) |
 | 5 | PASS | stops on the STOP file the harness created (1 call, exit 0) |
 | 6 | PASS | does not start at all when STOP already exists (0 calls) |
-| 7 | PASS | exits 1 when the same ticket stays blocked for two iterations (2 calls) |
+| 7 | PASS | exits 1 when the same ticket stays blocked two iterations (2 calls) |
 | 8 | PASS | respects `MAX_MINUTES` (exit 0, stopped well before 50 iterations) |
-| 9 | PASS | exits at once when the board starts empty (0 calls) |
+| 9 | PASS | exits immediately when the board starts empty (0 calls) |
 | 10 | PASS | `--dry-run` calls no harness, writes no log, exits 0 |
 | 11 | PASS | a failing iteration is logged with `exit=3` and the loop continues (2 calls) |
 | 12 | PASS | `MAX_FAILURES` failed runs in a row end the loop with exit 2 (3 calls) |
-| 13 | PASS | an unknown argument exits 2 with usage |
+| 13 | PASS | unknown argument exits 2 with usage |
 | 14 | PASS | the harness gets /dev/null on stdin (empty, not a tty) |
 | 15 | PASS | a multi-word `HARNESS_CMD` with `-C <path>` passes every word, then the prompt last |
+| 16 | PASS | no `OPENROUTER_API_KEY`: no usage line in `loop.log` |
+| 17 | PASS | no sessions folder: copy is a no-op (no -sessions folder, exit 0) |
+| 18 | PASS | a session file written during the iteration is copied, an older one is not |
+| 19 | PASS | with a key: `loop.log` has openrouter usage before and after, and no key or label |
 
-The last line was `15 passed, 0 failed`. `shellcheck bin/*.sh` also reported nothing. These are the fake harness results, not a real run. See the caution above.
+The last line was `19 passed, 0 failed`. `shellcheck bin/*.sh` also reported nothing. These are the fake harness results, not the real run above.
+
+### What this teaches
+
+An unattended run is only as good as what verifies it afterwards. Here a separate verifier, on a different model, found what the loop's own reviewers missed. That is why act 10 comes after acts 7 and 8: the loop only runs the gates, it does not replace them. It is also why the first real run of anything gets a strict check before anyone presents it as proof. This run was good, and the page says where it was not.
 
 ### The guards and the exit codes
 
@@ -218,8 +324,9 @@ The last line was `15 passed, 0 failed`. `shellcheck bin/*.sh` also reported not
 ### What the loop writes
 
 - `.agents/loop/runs/<timestamp>-i<n>.json` holds the harness output of each run, with `.err` beside it for stderr.
-- `.agents/loop/loop.log` has one line per iteration: the iteration number, the start and end times, the exit code, and the open tickets before and after.
-- When the loop ends it prints the cost hint:
+- `.agents/loop/runs/<timestamp>-i<n>-sessions/` holds a copy of the harness's own session files from that iteration. For Codex these are the rollouts, which are the only record of each subagent and its model.
+- `.agents/loop/loop.log` has one line per iteration: the iteration number, the start and end times, the exit code, and the open tickets before and after. With `OPENROUTER_API_KEY` set, it also has a line with `usage` and `limit_remaining` before and after each iteration. The key itself is never logged. This is the cost record for a Codex run.
+- When the loop ends it prints the cost hint. It points at the Claude ledger, so for a Codex run it shows $0. Use the OpenRouter lines instead:
 
   ```text
   [factory-loop] cost of this loop (run from the repo; put CLAUDE_CONFIG_DIR=~/.claude-workshop in front if you use the sandbox):
@@ -227,12 +334,12 @@ The last line was `15 passed, 0 failed`. `shellcheck bin/*.sh` also reported not
   [factory-loop]   node "<workshop>/tools/ledger/ledger.mjs" --since <loop start> --by agent
   ```
 
-All three of `runs/`, `STOP` and `loop.log` are gitignored.
+`runs/`, `STOP`, `loop.log`, `.ledger-cache.json` and `.agents/review/briefs/` are gitignored.
 
 <Aside type="note" title="What this act cost to build">
-The ledger for the act 10 window came to **$1.07 API-equivalent**, measured with `--no-cache` from the `act-9` tag time (2026-10-02T04:31:24Z) to the time it was run. It was Opus 5.5 $0.53 (the main session) and Sonnet 5.5 $0.54 (subagents), with no Fable.
+The ledger for the build of act 10 came to **$1.07 API-equivalent**, measured with `--no-cache` from the `act-9` tag time (2026-10-02T04:31:24Z) to the time it was run. It was Opus 5.5 $0.53 (the main session) and Sonnet 5.5 $0.54 (subagents), with no Fable.
 
-It is small because the act is small: a script, a prompt and a test, written by a subagent on Sonnet, and no real run. It is also a partial figure, because the window was still open when it was measured, and this page was still being written. It has the same caveat as the other acts: each window holds everything the session did in that time, so treat it as a rough shape. For the method, see [Counting the cost](/software-factory-workshop/reference/counting-the-cost/).
+That is the Claude side of building the act, and nothing else. It is a partial figure: the window was still open when it was measured. It does not include the first real run. That run used Codex through OpenRouter, which the Claude ledger cannot see, and it cost about **$4.73**, read from the OpenRouter key's usage before and after. Counting both, the act cost about $5.80, but the two numbers come from different meters, so treat the sum as a rough shape. Each ledger window also holds everything the session did in that time. For the method, see [Counting the cost](/software-factory-workshop/reference/counting-the-cost/).
 </Aside>
 
 ## Where to go from here
