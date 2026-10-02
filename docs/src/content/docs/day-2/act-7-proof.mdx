@@ -6,7 +6,7 @@ sidebar:
   label: "Act 7: proof"
 ---
 
-import { Steps, Code } from '@astrojs/starlight/components';
+import { Steps, Code, Aside } from '@astrojs/starlight/components';
 import skill from '../../../../../templates/act-7/.agents/skills/evidence/SKILL.md?raw';
 
 **The idea.** Agents cannot pinky promise. "Tests pass" and "it should work" are claims, and an agent can talk its way around a claim. So work is not done until it shows evidence an agent cannot talk its way around. A fix shows the bug on the old commit and its absence on the new one, captured the same way. This is the "prove" station from the popular version of the factory, and the popular version is right. This workshop adds one rule: the evidence names the commit it was captured against.
@@ -182,6 +182,15 @@ Three findings from the run are worth your attention.
 - **The tool needed proof too.** Run from inside a ticket worktree, `bin/evidence.mjs` put its checkout in the wrong folder: `hop.worktrees/fix-reserved-codes-g1.worktrees/` and not `hop.worktrees/`. The run exposed it. The fix finds the main checkout through `git rev-parse --git-common-dir`. It went onto `main` as `4104b00`, and the branch was rebased onto it. The lesson: tools in the factory need proof as well. A tool that makes evidence can be wrong, and the only way to find out is to run it the way it will be used.
 - **Task 1.4 was ticked slightly before the PR existed.** The evidence task was ticked in the evidence commit, and the PR that links the images was created straight afterwards. For a short gap that is harmless. It is still a claim made a moment before its proof, so look for it in review.
 - **The before was captured at a later commit than act 6.** The before ran on `origin/main` at `4104b00`, and not at the `act-6` tag. Only tooling and the proposal changed in between. The app code was the same. The manual repro in step 2 ran on `5ab7f63`. This is exactly why the rule exists. Nobody has to trust that the code was the same, because the record names the commit, and anyone can check it.
+
+<Aside type="note" title="What this act cost to build">
+- API-equivalent cost of this act's window: $2.03 (approximate).
+- By model: Opus 5.5 $1.72, Sonnet 5.5 $0.31.
+- Main session $0.63, subagents $1.40 (69% subagents).
+- The window also holds docs and research work done at the same time, so treat it as approximate.
+
+The cheapest act so far. Only Opus and Sonnet were used, and subagents did most of it. Run the ledger now and compare your own number.
+</Aside>
 
 ## What you take into act 8
 

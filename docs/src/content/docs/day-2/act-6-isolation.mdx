@@ -220,6 +220,15 @@ Five things in the run are worth your attention.
 - **`git branch -d` refused.** After a squash merge, git does not see the branch's commits in `main`, because the squash made a new commit. So it says the branch is "not fully merged". That is normal. Once you have confirmed the pull request is merged, `git branch -D` is the correct command.
 - **The board did its part.** `close-merged` closed two tickets from the merged pull requests, which is what the pull request links from step 4 were for.
 
+<Aside type="note" title="What this act cost to build">
+- API-equivalent cost of this act's window: $6.21 (approximate).
+- By model: Opus 5.5 $3.07, Sonnet 5.5 $3.04, Fable 5.1 $0.09.
+- Main session $2.09, subagents $4.12 (66% subagents).
+- The window also holds docs and research work done at the same time, so treat it as approximate.
+
+This is the first act with almost no Fable. Opus and Sonnet made up 98% of the cost. Run the ledger now and compare your own number.
+</Aside>
+
 ## What you take into act 7
 
 You can now run two agents at once. Each has its own worktree, branch, ticket and pull request, the gates run in all of them, and the board sees them all. What the pull requests do not yet have is proof. A reviewer reads a diff and a list of checks, and takes the agent's word for what they show. Act 7 puts before and after evidence in every pull request, so a fix shows the bug and then shows it gone.

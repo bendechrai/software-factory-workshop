@@ -58,15 +58,43 @@ Three things to say before anyone types.
      </TabItem>
    </Tabs>
 
-2. **Give it this prompt, exactly as written.** Do not add anything. Do not answer questions it asks with anything more than "you choose".
+2. **Start counting the cost.** Open a second terminal in your `hop` folder. You cloned the workshop repository on the [Before you arrive](/software-factory-workshop/start/before-you-arrive/) page, so the ledger is already on your machine. Run it from `hop`. It finds your project from the current folder.
+
+   The ledger reads your harness's own local logs and shows tokens and API-equivalent cost by model. Nothing is sent anywhere. Run it again at the end of each act and watch the number move.
+
+   <Tabs syncKey="harness">
+     <TabItem label="Claude Code">
+       ```bash
+       node ../software-factory-workshop/tools/ledger/ledger.mjs
+       ```
+       With the sandboxed Claude Code, point it at the sandbox's logs by setting `CLAUDE_CONFIG_DIR` the same way the alias does.
+
+       ```bash
+       CLAUDE_CONFIG_DIR=~/.claude-workshop node ../software-factory-workshop/tools/ledger/ledger.mjs
+       ```
+     </TabItem>
+     <TabItem label="Codex CLI">
+       The ledger reads Claude Code's log format only, so it cannot read Codex CLI logs. Use Codex CLI's own usage view. `npx ccusage@latest` also has a `codex` command (`npx ccusage@latest codex`), which its own help lists as showing Codex token usage.
+     </TabItem>
+     <TabItem label="Gemini CLI">
+       The ledger reads Claude Code's log format only, so it cannot read Gemini CLI logs. Use Gemini CLI's own usage view. `npx ccusage@latest` also has a `gemini` command (`npx ccusage@latest gemini`), which its own help lists as showing Gemini CLI usage.
+     </TabItem>
+     <TabItem label="Cursor">
+       The ledger reads Claude Code's log format only, so it cannot read Cursor logs. Use Cursor's own usage view. The help text of `npx ccusage@latest` does not list Cursor today.
+     </TabItem>
+   </Tabs>
+
+   The full story is on [Counting the cost](/software-factory-workshop/reference/counting-the-cost/).
+
+3. **Give it this prompt, exactly as written.** Do not add anything. Do not answer questions it asks with anything more than "you choose".
 
    ```text
    Build me a short link service called hop. I paste a long URL, it gives me a short link, and visiting the short link redirects to the long URL. Show how many times each link was clicked.
    ```
 
-3. **When it says it is done, run it and try it.** Paste a link, click the short one, and check the count went up. If it does not work, tell the agent so and let it fix it. Note how many turns that took.
+4. **When it says it is done, run it and try it.** Paste a link, click the short one, and check the count went up. If it does not work, tell the agent so and let it fix it. Note how many turns that took.
 
-4. **Commit what you have and tag it.** You will come back to this point.
+5. **Commit what you have and tag it.** You will come back to this point.
 
    ```bash
    git add -A
@@ -74,7 +102,7 @@ Three things to say before anyone types.
    git tag act-1
    ```
 
-5. **Take a screenshot of the home page.** Playwright can do it from the command line; replace the port with yours.
+6. **Take a screenshot of the home page.** Playwright can do it from the command line; replace the port with yours.
 
    ```bash
    npx playwright screenshot --viewport-size=1280,800 http://localhost:3000 screenshot.png
@@ -106,6 +134,15 @@ All three work. All three pass their own tests. None of them share an API shape,
 
 <Aside type="note" title="An honest note on divergence">
 These three runs all came from models in the same family, and they still disagreed on framework, layout and style. A room full of different harnesses and models diverges more. The point stands either way: nothing about the result was decided by you.
+</Aside>
+
+<Aside type="note" title="What this act cost to build">
+- API-equivalent cost of this act's window: $15.20 (approximate).
+- By model: Fable 5.1 $14.83, Opus 5.5 $0.22, Sonnet 5.5 $0.15.
+- Main session $7.16, subagents $8.04 (53% subagents).
+- The window also holds docs and research work done at the same time, so treat it as approximate.
+
+Everything ran on the most expensive model, and nothing yet steers work to a cheaper one. Run the ledger now and compare your own number.
 </Aside>
 
 ## What to take into act 2

@@ -1,0 +1,102 @@
+---
+title: Counting the cost
+description: How the workshop ledger works, what its numbers mean, and what the first eight acts cost to build.
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The workshop ships a small cost ledger in `tools/ledger/` in the workshop repository. It has no dependencies and needs Node 24 or newer. This page says what it reads, how it prices, and what it found when it was run over the build of this guide.
+
+```bash
+node ../software-factory-workshop/tools/ledger/ledger.mjs
+```
+
+Run that from your `hop` folder. It finds your project from the current folder. With a sandboxed Claude Code, set the config folder the same way as the alias:
+
+```bash
+CLAUDE_CONFIG_DIR=~/.claude-workshop node ../software-factory-workshop/tools/ledger/ledger.mjs
+```
+
+## What the ledger reads
+
+- Claude Code's local logs, in `${CLAUDE_CONFIG_DIR:-~/.claude}/projects/<your folder path>/`. They are JSONL files. Nothing is sent anywhere.
+- The main session files, and the subagent files under `<session>/subagents/`. Subagents are counted. `--by agent` shows main against each subagent type.
+- Only the lines where the model answered, because only those carry token counts.
+- One record per message id. Claude Code writes one line per content block of the same reply, so the same reply shows up several times. The ledger keeps one, and takes the largest value of each count. It never adds duplicates.
+
+It reads Claude Code's log format only. For other harnesses, see the Act 1 page.
+
+## Prices
+
+The price table is `tools/ledger/prices.json`. Its source is Anthropic's pricing page (`platform.claude.com/docs/en/about-claude/pricing`), and it was last checked on 2026-10-01. Prices are in USD per million tokens, at standard rates. Batch discounts, fast mode and US-only inference (1.1 times the price) are not modelled.
+
+A model the table does not know is never counted as free. It shows as `(UNPRICED)` with a warning, and its tokens are still counted.
+
+## Why 1-hour cache writes matter
+
+Claude Code mostly writes its cache with a 1-hour lifetime. Anthropic prices that at 2 times the input price. A 5-minute write is 1.25 times. The log records both counts for each message, and the ledger prices each at its own rate.
+
+The earlier script used in the author's aviation project priced every cache write at the 5-minute rate. That underpriced the 1-hour writes. On the aviation logs the gap was about $19.64.
+
+## API-equivalent versus subscription
+
+The main number is API-equivalent. It is what the same tokens would cost at list prices on the API. It is not what you paid.
+
+If you are on a subscription, you pay a flat fee. Anthropic publishes no token or dollar allowance for its plans. So a subscription figure needs two numbers from you: your plan price and your own guess at the monthly allowance in API-equivalent dollars. Pass both:
+
+```bash
+node ../software-factory-workshop/tools/ledger/ledger.mjs --plan-usd 200 --plan-allowance-usd 2200
+```
+
+That adds a "share of plan" column: API dollars, divided by the allowance, times the plan price. It is an estimate. Measured heavy months and the often-quoted 36 times figure differ by several times, and the share moves in step. Read it as "this much of one month's plan, if the allowance were X". It is not a bill. It also ignores weekly limits and a second plan if you have one.
+
+## OpenRouter
+
+If you call other vendors' models through OpenRouter, log each call to a JSONL file with `model`, `promptTokens`, `completionTokens` and `cost`, and an optional `ts`. The cost is what OpenRouter charged. Add it with:
+
+```bash
+node ../software-factory-workshop/tools/ledger/ledger.mjs --openrouter .agents/review/openrouter-usage.jsonl
+```
+
+Those rows are added at the charged price, as `openrouter:<model>`. No plan conversion is applied to them, because you pay OpenRouter the API price.
+
+## Model routing is the main cost lever
+
+Here is the cost of building acts 1 to 8 of this guide, measured by the ledger. The full method is in `research/per-act-cost.md`.
+
+| Act | Total | Main | Subagents | Subagent share | Fable 5.1 | Opus 5.5 | Sonnet 5.5 | Haiku 4.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | $15.20 | $7.16 | $8.04 | 53% | $14.83 | $0.22 | $0.15 | $0.00 |
+| 2 | $5.16 | $4.15 | $1.02 | 20% | $5.16 | $0.00 | $0.00 | $0.00 |
+| 3 | $4.58 | $1.69 | $2.89 | 63% | $4.58 | $0.00 | $0.00 | $0.00 |
+| 4 | $5.25 | $1.80 | $3.44 | 66% | $5.25 | $0.00 | $0.00 | $0.00 |
+| 5 | $9.24 | $4.11 | $5.12 | 55% | $6.30 | $2.77 | $0.17 | $0.00 |
+| 6 | $6.21 | $2.09 | $4.12 | 66% | $0.09 | $3.07 | $3.04 | $0.00 |
+| 7 | $2.03 | $0.63 | $1.40 | 69% | $0.00 | $1.72 | $0.31 | $0.00 |
+| 8 | $5.97 | $2.99 | $2.98 | 50% | $0.00 | $4.10 | $1.36 | $0.50 |
+| Total | $53.63 | $24.62 | $29.01 | 54% | $36.22 | $11.88 | $5.03 | $0.50 |
+
+By model, acts 1 to 8: Fable 5.1 was 68% of the cost, Opus 5.5 was 22%, Sonnet 5.5 was 9% and Haiku 4.5 was 1%.
+
+Look at the prices. Fable 5.1 output costs $50 per million tokens. Opus 5.5 costs $20, which is 2/5ths as much. Sonnet 5.5 costs $10, which is 1/5th as much. Input is $10, $4 and $2. So the same tokens on Sonnet cost 1/5th as much as on Fable.
+
+Now look at the table. Acts 1 to 4 ran almost entirely on Fable. Act 2 spent 80% of its money in the main session, because the orchestrator was still doing work itself. From act 5 on, Opus appears. In act 6 Fable is down to $0.09, and acts 7 and 8 have none. Act 7 cost $2.03, 13% of what act 1 cost. This is not a controlled experiment, because each act is different work. But the direction matches the price table. Use the expensive model to orchestrate and decide, and send the work to cheaper models.
+
+## Cross-check against ccusage
+
+The numbers were checked against `npx ccusage@latest` (version 20.0.26) on 2026-10-01, on the same logs. For Fable 5.1 on the aviation project both tools gave $201.83, and the token counts matched to the digit. Opus 5.5 differed by $0.05 ($29.51 against $29.56), and Sonnet 5.5 matched at $4.54.
+
+Both tools read the same files and both split cache writes by lifetime, so agreement shows the arithmetic and de-duplication are consistent. It does not show the prices are right. The prices are checked against the pricing page. Do not run ccusage with `--offline` for new models. Its built-in table had no price for `claude-sonnet-5-5` and reported $0 for it.
+
+## Caveats
+
+<Aside type="caution" title="Read these before quoting a number">
+- The per-act figures are approximate. Each window holds everything the orchestrating session did in that time, including docs, research and other acts being built at the same time.
+- API-equivalent is not what you paid. Subscription cost is an estimate that depends on an allowance Anthropic does not publish.
+- Only Claude Code logs are read. Work done in other harnesses is not counted.
+- Prices were checked on 2026-10-01. If the pricing page changes, update `prices.json`.
+- Standard rates only. Batch, fast mode and US-only inference are not modelled.
+- A log that is still being written grows between runs, so two runs a minute apart can differ by a few cents.
+</Aside>

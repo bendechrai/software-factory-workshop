@@ -361,6 +361,15 @@ The demo run was 7 commits, 9 of 9 tasks ticked, 6 browser scenarios passing, an
 - **The browser test caught a bug the unit tests could not.** The first browser run showed an empty stats page. The cause: `const top = ...` at the top level of a classic script collides with the non-configurable `window.top`. That is a SyntaxError, so the script never ran. No unit test sees that, because no unit test runs the page. The agent renamed the variable to `topRows` and left a comment saying why.
 - **A waiver was written down.** For ticket 1 the browser test was waived. No page, route or stylesheet changed, so gate 3 from act 3 did not apply, and the handoff note said so. That is a correct waiver: loud, with a reason, in the note you read. Tickets 2 and 3 ran the browser test, because a route and pages changed.
 
+<Aside type="note" title="What this act cost to build">
+- API-equivalent cost of this act's window: $9.24 (approximate).
+- By model: Fable 5.1 $6.30, Opus 5.5 $2.77, Sonnet 5.5 $0.17.
+- Main session $4.11, subagents $5.12 (55% subagents).
+- The window also holds docs and research work done at the same time, so treat it as approximate.
+
+Opus shows up here for the first time. This is where work starts to move off Fable. Run the ledger now and compare your own number.
+</Aside>
+
 ## What you take into act 6
 
 You have a board, a change imported onto it, and one agent that works the tickets in order while you play the other roles. The work is still in one checkout, so two agents would collide in the files. Act 6 gives each ticket its own worktree and branch and merges them through pull requests. The board will find the same `.board/` from every one of them.

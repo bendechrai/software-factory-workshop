@@ -129,6 +129,15 @@ Compare with act 1. Same model, same app, same kind of request. The difference i
 The restructuring touched 43 files: 2132 lines added, 268 removed. It converted to TypeScript with no build step (Node strips the types), split the flat files into routes, actions and services, moved the schema into a numbered migration, and added a `verify` script. Behaviour and the JSON shape of the API did not change, and the ported tests passed. It took the agent one pass.
 </Aside>
 
+<Aside type="note" title="What this act cost to build">
+- API-equivalent cost of this act's window: $5.16 (approximate).
+- By model: Fable 5.1 $5.16.
+- Main session $4.15, subagents $1.02 (20% subagents).
+- The window also holds docs and research work done at the same time, so treat it as approximate.
+
+This act cost the most in the main session, because the orchestrator was still doing work itself. Run the ledger now and compare your own number.
+</Aside>
+
 ## What you take into act 3
 
 The agent now builds the way you asked. Nothing yet stops it from committing something that fails the checks, or from saying it ran them when it did not. That is act 3.

@@ -6,7 +6,7 @@ sidebar:
   label: "Act 8: review"
 ---
 
-import { Steps, Code, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Steps, Code, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 import rubric from '../../../../../templates/act-8/.agents/review/rubric.md?raw';
 import reviewer from '../../../../../templates/act-8/.agents/review/reviewer.md?raw';
 import challenger from '../../../../../templates/act-8/.agents/review/challenger.md?raw';
@@ -221,6 +221,15 @@ The first calibration attempt used Haiku to plant the defect. It could not find 
 
 - **The tests already guarded the behaviour well.** So aim calibration defects at what the rubric covers and the tests cannot see: layering, dead code, scope, evidence. That is what PR #5 does.
 - **Pick a model that fits the judgement the task needs.** Planting a defect that slips past a good test suite is a hard judgement call. It is not grunt work.
+
+<Aside type="note" title="What this act cost to build">
+- API-equivalent cost of this act's window: $5.97 (approximate).
+- By model: Opus 5.5 $4.10, Sonnet 5.5 $1.36, Haiku 4.5 $0.50.
+- Main session $2.99, subagents $2.98 (50% subagents).
+- The window also holds docs and research work done at the same time, so treat it as approximate.
+
+The reviewer ran on Sonnet. The small Haiku line is the failed calibration attempt described above. Run the ledger now and compare your own number.
+</Aside>
 
 ## What you take into act 9
 
