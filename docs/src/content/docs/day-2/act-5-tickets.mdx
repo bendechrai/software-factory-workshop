@@ -118,7 +118,7 @@ In this act you play two roles in one session. You are the human reviewer, and y
        command = "agentboard"
        args = ["mcp"]
        ```
-       Written from the Codex docs, not run.
+       Tested with Codex CLI 0.160.0. The `command = "agentboard"` form needs the global install from earlier in this act. The `npx` form also works: `command = "npx"` with `args = ["-y", "@bendechrai/agentboard", "mcp"]`. A project `.codex/config.toml` only loads for a trusted project, and `codex mcp list` shows the server only when run from inside the repo.
      </TabItem>
      <TabItem label="Gemini CLI">
        Add to `.gemini/settings.json`:

@@ -72,7 +72,9 @@ The harness hook that stops an agent skipping the git hooks:
          { "type": "command", "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-no-verify.sh\"", "timeout": 10 }
        ] } ] } }
        ```
-       Project hooks load when the project is trusted. Written from the Codex docs; not run while building this guide.
+       Project hooks only run once the hook itself is trusted, in addition to the project. The first time Codex sees a new or changed `.codex/hooks.json` it marks the hook untrusted and does not run it. Open the hook review in the TUI (`/hooks`) and trust it. Until you do, the guard does not run. Codex's hook input has the same `tool_name` / `tool_input.command` shape as Claude Code, so `block-no-verify.sh` works unchanged.
+
+       Tested with Codex CLI 0.160.0: once the hook was trusted, `git commit --no-verify` was blocked. The test was headless, so the TUI review step itself was not run.
      </TabItem>
      <TabItem label="Gemini CLI">
        Add to `.gemini/settings.json`:

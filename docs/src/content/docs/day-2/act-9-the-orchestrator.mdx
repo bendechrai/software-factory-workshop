@@ -51,14 +51,14 @@ The implementer agent builds one ticket in its own worktree. It points at the sk
 
 <Code code={implementer} lang="md" title=".claude/agents/implementer.md" />
 
-Each harness has its own agent file. Only Claude Code was run for this workshop. The other three were written from the docs and are marked "Written from the docs, not run". Each one points at the body of the Claude Code file.
+Each harness has its own agent file. Claude Code and Codex CLI were run for this workshop. The Gemini CLI and Cursor files were written from the docs and are marked "Written from the docs, not run". Each one points at the body of the Claude Code file.
 
 <Tabs syncKey="harness">
   <TabItem label="Claude Code">
     `.claude/agents/implementer.md` with `model: sonnet`. This is the one the demo run used, with the deviation described below. The reviewer you added in act 8 is `model: opus`, so the two differ, as the rule needs.
   </TabItem>
   <TabItem label="Codex CLI">
-    `.codex/agents/implementer.toml`. Written from the docs, not run.
+    `.codex/agents/implementer.toml`, with `model = "openai/gpt-5.3-codex"`. On OpenRouter, models need the provider prefix. Tested with Codex CLI 0.160.0: the implementer agent loads, spawning it by name with `spawn_agent` works, the child ran on the model in the TOML, and the keys `name`, `description`, `developer_instructions` and `model` are all accepted.
   </TabItem>
   <TabItem label="Gemini CLI">
     `.gemini/agents/implementer.md`. Written from the docs, not run.

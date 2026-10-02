@@ -24,7 +24,7 @@ import skill from '../../../../../templates/act-6/.agents/skills/new-feature/SKI
    | Harness | Native worktree support |
    | --- | --- |
    | Claude Code | `claude -w <name>` creates one for a session. A subagent with `isolation: worktree` gets its own temporary worktree. |
-   | Codex | The desktop app only. In the CLI, run `git worktree add` yourself and start with `codex -C <dir>`. |
+   | Codex | `codex --worktree` (also on `codex exec`) makes a managed detached worktree under `$CODEX_HOME/worktrees`, with no name, branch or base. For a named branch, run `git worktree add` yourself and start with `codex -C <dir>`. |
    | Gemini CLI | Experimental. Enable it in settings, then `gemini -w <name>`. |
    | Cursor | `agent -w <name> --worktree-base main` in the CLI. |
 
@@ -119,7 +119,7 @@ You are the orchestrator and the reviewer. Two agents are the implementers. Use 
        This is what the demo run used: two sessions started in the main checkout, each making its worktree with `git worktree add` as the skill says. To use the native feature instead, start each session with `claude -w feat-link-extras-g1` and `claude -w feat-link-extras-g2`. The folders then live under `.claude/worktrees/` inside the repo, which is not the layout in this act, so add `.claude/worktrees/` to `.gitignore`.
      </TabItem>
      <TabItem label="Codex CLI">
-       Run `git worktree add ../hop.worktrees/feat-link-extras-g1 -b feat/link-extras-g1 --no-track origin/main` yourself, then start `codex -C ../hop.worktrees/feat-link-extras-g1`. Do the same for group 2. Written from the docs, not run.
+       Run `git worktree add ../hop.worktrees/feat-link-extras-g1 -b feat/link-extras-g1 --no-track origin/main` yourself, then start `codex -C ../hop.worktrees/feat-link-extras-g1`. Do the same for group 2. Codex 0.160.0 also has `--worktree`, but it makes an unnamed detached worktree with no choice of branch or base, so use `git worktree add` for the named branches this act needs. Tested with Codex CLI 0.160.0 (the `--worktree` flag; the `git worktree add` line is plain git).
      </TabItem>
      <TabItem label="Gemini CLI">
        Enable `{"experimental": {"worktrees": true}}` in settings, then start `gemini -w feat-link-extras-g1` and `gemini -w feat-link-extras-g2`. Written from the docs, not run.

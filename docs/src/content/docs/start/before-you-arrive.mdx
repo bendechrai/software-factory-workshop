@@ -114,8 +114,11 @@ Act 1 starts every attendee from the same place: your own harness, with none of 
     alias codex-workshop='CODEX_HOME=~/.codex-workshop codex'
     codex-workshop login
     ```
-    The directory must exist before Codex starts; it does not create it. Your login lives inside `CODEX_HOME`, so sign in again. One thing does not move: personal skills in `~/.agents/skills` still load. If you have any, rename that folder for the two days.
-       Written from the docs, not run.
+    The directory must exist before Codex starts; it does not create it. Your login lives inside `CODEX_HOME`, so sign in again. One thing does not move: personal skills in `~/.agents/skills` still load. If you have any, rename that folder for the two days. That advice applies to `~/.agents/skills` only: Codex's own bundled skills (such as `imagegen` and `skill-creator`) always load.
+
+    If you route Codex through OpenRouter, the `OPENROUTER_API_KEY` environment variable plus `model_provider = "openrouter"` in `$CODEX_HOME/config.toml` replaces `codex login`. In that setup `codex login status` still says you are not logged in, even though runs work.
+
+    Tested with Codex CLI 0.160.0 through OpenRouter.
      </TabItem>
   <TabItem label="Gemini CLI">
     ```bash

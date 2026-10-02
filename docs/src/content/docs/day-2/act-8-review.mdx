@@ -25,7 +25,7 @@ import challenger from '../../../../../templates/act-8/.agents/review/challenger
 6. **Every miss becomes a Lessons line.** When a reviewer, a human or production finds something the rubric missed, one line goes into the rubric's Lessons section, in the PR that fixes it.
 7. **Log what each opinion costs.** The aviation project logs every OpenRouter call with the cost OpenRouter charged. Here the second-opinion script appends one line per call to a usage log, and the ledger can add it to the total.
 
-**Most attendees have one subscription.** So the baseline is an in-harness reviewer on a different model of the same vendor. In Claude Code that is a subagent whose model differs from the implementer's. The rule is "different from the implementer", not a particular model. The demo's act 8 used a Sonnet reviewer against an Opus implementer, which was correct then. From act 9 the implementers are Sonnet, so the reviewer file ships as `model: opus`. The other harnesses have the same idea, in the tabs below. Only Claude Code was run for this workshop. The other three files were written from the docs and are marked "Written from the docs, not run". The OpenRouter second opinion is optional. The presenter shows it, and it is written up below for anyone with a key.
+**Most attendees have one subscription.** So the baseline is an in-harness reviewer on a different model of the same vendor. In Claude Code that is a subagent whose model differs from the implementer's. The rule is "different from the implementer", not a particular model. The demo's act 8 used a Sonnet reviewer against an Opus implementer, which was correct then. From act 9 the implementers are Sonnet, so the reviewer file ships as `model: opus`. The other harnesses have the same idea, in the tabs below. Claude Code and Codex CLI were run for this workshop. The Gemini CLI and Cursor files were written from the docs and are marked "Written from the docs, not run". The OpenRouter second opinion is optional. The presenter shows it, and it is written up below for anyone with a key.
 
 ## The files
 
@@ -48,7 +48,7 @@ Each harness wires the reviewer in its own way. Pick a model that differs from t
     `.claude/agents/reviewer.md` with `model: opus` in its frontmatter, and a comment saying it must differ from the implementer's model. The act 8 demo run used `sonnet` here, because its implementer was on Opus. Once the implementers are Sonnet (act 9), the reviewer must be Opus, so the template ships `opus`. If your implementer session runs on Opus, change the line to `sonnet`.
   </TabItem>
   <TabItem label="Codex CLI">
-    `.codex/agents/reviewer.toml` with a `model` that differs from the implementer's. The template names `gpt-5.5-codex`. Written from the docs, not run.
+    `.codex/agents/reviewer.toml` with a `model` that differs from the implementer's. On OpenRouter, model ids carry the provider prefix, and `gpt-5.5-codex` is not a valid id there. The template uses `anthropic/claude-sonnet-5.5`: a different vendor from the implementer (`openai/gpt-5.3-codex`), and a model that accepts images, so it can read screenshots. The first real run with a text-only model could not. Tested with Codex CLI 0.160.0.
   </TabItem>
   <TabItem label="Gemini CLI">
     `.gemini/agents/reviewer.md`. The template names `gemini-2.5-pro`. Written from the docs, not run.
