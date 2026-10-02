@@ -63,8 +63,8 @@ The code-structure skill. Three layers, with a table of what each one owns and n
        Written from the docs, not run.
      </TabItem>
      <TabItem label="Cursor">
-       Nothing more to do. Cursor reads `AGENTS.md` at the root and skills in `.agents/skills/`.
-       Written from the docs, not run.
+       Nothing more to do. Cursor reads `AGENTS.md` at the root, falls back to `CLAUDE.md` when there is no `AGENTS.md`, and reads skills from both `.agents/skills/` and `.claude/skills/`.
+       Tested with Cursor CLI 2026.10.01.
      </TabItem>
    </Tabs>
 

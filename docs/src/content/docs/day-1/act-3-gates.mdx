@@ -83,14 +83,15 @@ The harness hook that stops an agent skipping the git hooks:
          { "name": "block-no-verify", "type": "command", "command": "$GEMINI_PROJECT_DIR/.agents/hooks/block-no-verify.sh", "timeout": 10000 }
        ] } ] } }
        ```
-       Gemini's hook input has a different JSON shape, so adapt the `python3` line in the script to read the command from `tool_input.command`. Written from the Gemini docs; not run while building this guide.
+       The script reads both the top-level `command` and `tool_input.command` shapes, so it needs no change for the shape. Gemini's own input shape has not been tested here. Written from the Gemini docs; not run while building this guide.
      </TabItem>
      <TabItem label="Cursor">
        Create `.cursor/hooks.json`:
        ```json
        { "version": 1, "hooks": { "beforeShellExecution": [ { "command": ".agents/hooks/block-no-verify.sh" } ] } }
        ```
-       Cursor's hook input has a different JSON shape, so adapt the `python3` line in the script. Written from the Cursor docs; not run while building this guide.
+       Cursor's CLI also runs the Claude Code hook in `.claude/settings.json`, so the guard already protects Cursor with no extra file (tested). A Cursor-native hook gets the command at the top level (`command`), not under `tool_input`. The script reads both shapes, so it works with either file. Exit 2 blocks. Exit 1 does not block in Cursor. JSON such as `{"permission":"deny", ...}` on stdout also blocks.
+       Tested with Cursor CLI 2026.10.01 in `-p --force` mode.
      </TabItem>
    </Tabs>
 

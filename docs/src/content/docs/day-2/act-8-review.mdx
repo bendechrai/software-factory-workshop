@@ -25,7 +25,7 @@ import challenger from '../../../../../templates/act-8/.agents/review/challenger
 6. **Every miss becomes a Lessons line.** When a reviewer, a human or production finds something the rubric missed, one line goes into the rubric's Lessons section, in the PR that fixes it.
 7. **Log what each opinion costs.** The aviation project logs every OpenRouter call with the cost OpenRouter charged. Here the second-opinion script appends one line per call to a usage log, and the ledger can add it to the total.
 
-**Most attendees have one subscription.** So the baseline is an in-harness reviewer on a different model of the same vendor. In Claude Code that is a subagent whose model differs from the implementer's. The rule is "different from the implementer", not a particular model. The demo's act 8 used a Sonnet reviewer against an Opus implementer, which was correct then. From act 9 the implementers are Sonnet, so the reviewer file ships as `model: opus`. The other harnesses have the same idea, in the tabs below. Claude Code and Codex CLI were run for this workshop. The Gemini CLI and Cursor files were written from the docs and are marked "Written from the docs, not run". The OpenRouter second opinion is optional. The presenter shows it, and it is written up below for anyone with a key.
+**Most attendees have one subscription.** So the baseline is an in-harness reviewer on a different model of the same vendor. In Claude Code that is a subagent whose model differs from the implementer's. The rule is "different from the implementer", not a particular model. The demo's act 8 used a Sonnet reviewer against an Opus implementer, which was correct then. From act 9 the implementers are Sonnet, so the reviewer file ships as `model: opus`. The other harnesses have the same idea, in the tabs below. Claude Code and Codex CLI were run for this workshop. The Gemini CLI file was written from the docs and is marked "Written from the docs, not run". The Cursor file was tested only as far as subagent loading. The OpenRouter second opinion is optional. The presenter shows it, and it is written up below for anyone with a key.
 
 ## The files
 
@@ -54,7 +54,7 @@ Each harness wires the reviewer in its own way. Pick a model that differs from t
     `.gemini/agents/reviewer.md`. The template names `gemini-2.5-pro`. Written from the docs, not run.
   </TabItem>
   <TabItem label="Cursor">
-    `.cursor/agents/reviewer.md`. The template names `gpt-5`. Written from the docs, not run.
+    `.cursor/agents/reviewer.md`, with `model:` set to an id from `agent models` that differs from the implementer's. The template names `gpt-5.5-medium`, which suits a Claude implementer; if your implementer is a GPT model, choose a Claude id from the list instead. `gpt-5` is not a valid id. Named models need a paid Cursor plan; on the Free plan only `auto` works. Subagents in `.cursor/agents` and `.claude/agents` both load, and `.cursor` wins a name clash. Tested with Cursor CLI 2026.10.01 (subagent loading only; the real reviewer body and named models were not run).
   </TabItem>
 </Tabs>
 

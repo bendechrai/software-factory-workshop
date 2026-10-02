@@ -125,7 +125,7 @@ You are the orchestrator and the reviewer. Two agents are the implementers. Use 
        Enable `{"experimental": {"worktrees": true}}` in settings, then start `gemini -w feat-link-extras-g1` and `gemini -w feat-link-extras-g2`. Written from the docs, not run.
      </TabItem>
      <TabItem label="Cursor">
-       Start `agent -w feat-link-extras-g1 --worktree-base main` and `agent -w feat-link-extras-g2 --worktree-base main`. Written from the docs, not run.
+       Start `agent -w feat-link-extras-g1 --worktree-base main` and `agent -w feat-link-extras-g2 --worktree-base main`. Worktrees are created in `~/.cursor/worktrees/<repo>/<name>`, even with `CURSOR_CONFIG_DIR` set. `--worktree-base main` bases the branch on `main`; the default is the current HEAD. Setup scripts come from `.cursor/worktrees.json`. Tested with Cursor CLI 2026.10.01: creation and location only; an agent run inside the worktree was blocked by the Free plan limit.
      </TabItem>
    </Tabs>
 

@@ -51,7 +51,7 @@ The implementer agent builds one ticket in its own worktree. It points at the sk
 
 <Code code={implementer} lang="md" title=".claude/agents/implementer.md" />
 
-Each harness has its own agent file. Claude Code and Codex CLI were run for this workshop. The Gemini CLI and Cursor files were written from the docs and are marked "Written from the docs, not run". Each one points at the body of the Claude Code file.
+Each harness has its own agent file. Claude Code and Codex CLI were run for this workshop. The Gemini CLI file was written from the docs and is marked "Written from the docs, not run". The Cursor file was tested only as far as subagent loading. Each one points at the body of the Claude Code file.
 
 <Tabs syncKey="harness">
   <TabItem label="Claude Code">
@@ -64,7 +64,7 @@ Each harness has its own agent file. Claude Code and Codex CLI were run for this
     `.gemini/agents/implementer.md`. Written from the docs, not run.
   </TabItem>
   <TabItem label="Cursor">
-    `.cursor/agents/implementer.md`. Written from the docs, not run.
+    `.cursor/agents/implementer.md`. Tested with Cursor CLI 2026.10.01: subagents in `.cursor/agents` and `.claude/agents` both load, and `.cursor` wins a name clash. The real implementer body was not run.
   </TabItem>
 </Tabs>
 

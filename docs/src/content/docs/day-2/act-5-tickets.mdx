@@ -132,7 +132,8 @@ In this act you play two roles in one session. You are the human reviewer, and y
        ```json
        { "mcpServers": { "agentboard": { "command": "agentboard", "args": ["mcp"] } } }
        ```
-       Written from the Cursor docs, not run.
+       Then run `agent mcp enable agentboard` once. Cursor asks you to approve each MCP server, and `agent mcp list` shows "needs approval" until you do. Check with `agent mcp list-tools agentboard`. In headless `-p` runs the MCP tool calls also need `--force`; `--approve-mcps` alone was not enough. The `npx` form is approved separately and was not tested end to end.
+       Tested with Cursor CLI 2026.10.01: `board_list` only; hand-off and claim flows were not run.
      </TabItem>
    </Tabs>
 

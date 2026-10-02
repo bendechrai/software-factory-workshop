@@ -10,16 +10,16 @@ import { Aside } from '@astrojs/starlight/components';
 Everything in this workshop runs on any of these four. This page is the lookup table for the places where they differ. Versions and facts were checked against each vendor's documentation on 1 October 2026; the exact pages are listed at the bottom.
 
 <Aside type="caution">
-Claude Code was exercised end to end while building this guide. The Codex CLI column was tested with Codex CLI 0.160.0 through OpenRouter: the sandbox home, `AGENTS.md`, skills, hooks, MCP, custom agents, headless flags and the worktree flag. The Gemini CLI and Cursor columns still come from their documentation and are marked as such throughout. For Gemini CLI, only the sandbox folder was run, and signing in with a personal Google account was tried on 2026-10-02 and failed (see the sandbox table).
+Claude Code was exercised end to end while building this guide. The Codex CLI column was tested with Codex CLI 0.160.0 through OpenRouter: the sandbox home, `AGENTS.md`, skills, hooks, MCP, custom agents, headless flags and the worktree flag. The Cursor CLI column was tested with Cursor CLI 2026.10.01 on a Free plan: the sandbox variable, `AGENTS.md` and `CLAUDE.md`, skills, the OpenSpec commands, hooks, MCP, subagent loading, the worktree flag and headless flags. Not testable on that plan: named models, a full propose and apply run, and `--force` file writes. The Gemini CLI column still comes from its documentation and is marked as such throughout. For Gemini CLI, only the sandbox folder was run, and signing in with a personal Google account was tried on 2026-10-02 and failed (see the sandbox table).
 </Aside>
 
 ## The sandbox
 
 | | Claude Code | Codex CLI | Gemini CLI | Cursor CLI |
 |---|---|---|---|---|
-| Fresh home | `CLAUDE_CONFIG_DIR=<dir> claude` | `CODEX_HOME=<dir> codex` (directory must exist; the home is not created for you) | `GEMINI_CLI_HOME=<parent> gemini` (creates `<parent>/.gemini`; run and confirmed on 2026-10-02) | `CURSOR_CONFIG_DIR=<dir> agent` (scope not fully documented) |
-| Sign in again | `claude auth login` | `codex login`, or with OpenRouter set `OPENROUTER_API_KEY` and `model_provider = "openrouter"` in `$CODEX_HOME/config.toml` (`codex login status` still says not logged in) | `GEMINI_API_KEY=<key>` from Google AI Studio, then choose "Use Gemini API key" (written from the docs, not run). "Login with Google" with a personal account failed on 2026-10-02: "This client is no longer supported for Gemini Code Assist for individuals" | first run prompts |
-| Still loads | project `AGENTS.md`, `.claude/`, `.mcp.json` | project files, `~/.agents/skills` (rename it to hide it), and Codex's bundled skills, always | project `.gemini/` | project `.cursor/` |
+| Fresh home | `CLAUDE_CONFIG_DIR=<dir> claude` | `CODEX_HOME=<dir> codex` (directory must exist; the home is not created for you) | `GEMINI_CLI_HOME=<parent> gemini` (creates `<parent>/.gemini`; run and confirmed on 2026-10-02) | `CURSOR_CONFIG_DIR=<dir> agent` (moves only the CLI config, the sign-in record and chats; MCP servers, hooks, skills and transcripts still come from `~/.cursor` and `~/.claude`; disable servers with `agent mcp disable <name>`) |
+| Sign in again | `claude auth login` | `codex login`, or with OpenRouter set `OPENROUTER_API_KEY` and `model_provider = "openrouter"` in `$CODEX_HOME/config.toml` (`codex login status` still says not logged in) | `GEMINI_API_KEY=<key>` from Google AI Studio, then choose "Use Gemini API key" (written from the docs, not run). "Login with Google" with a personal account failed on 2026-10-02: "This client is no longer supported for Gemini Code Assist for individuals" | `agent login`. `--model <id>` is saved as the default. Named models need a paid plan; Free allows only `auto` |
+| Still loads | project `AGENTS.md`, `.claude/`, `.mcp.json` | project files, `~/.agents/skills` (rename it to hide it), and Codex's bundled skills, always | project `.gemini/` | project `.cursor/`, plus your global `~/.cursor` MCP servers, hooks and skills, and `~/.claude/skills` |
 
 ## One instruction file: AGENTS.md
 
@@ -50,13 +50,13 @@ So the demo repository has one `AGENTS.md`, no `CLAUDE.md`, and a two-line `.gem
 | Subagent definitions | `.claude/agents/*.md` | `.codex/agents/*.toml` | `.gemini/agents/*.md` | `.cursor/agents/*.md` (also reads `.claude/agents/`) |
 | Pick a model per agent | `model:` in frontmatter | `model` in the TOML | `model` in frontmatter | `model` in frontmatter |
 | Run in parallel | Yes, up to 20 at once | Yes, on request | Not documented | Yes, several Task calls in one message |
-| Native worktree | `claude -w <name>`, or `isolation: worktree` on a subagent | `codex --worktree`: a managed detached worktree under `$CODEX_HOME/worktrees`, no name or base; for a named branch use `git worktree add --no-track origin/main` and `codex -C <dir>` | `experimental.worktrees: true`, then `gemini -w <name>` | `agent -w <name> --worktree-base main` |
+| Native worktree | `claude -w <name>`, or `isolation: worktree` on a subagent | `codex --worktree`: a managed detached worktree under `$CODEX_HOME/worktrees`, no name or base; for a named branch use `git worktree add --no-track origin/main` and `codex -C <dir>` | `experimental.worktrees: true`, then `gemini -w <name>` | `agent -w <name> --worktree-base main`: creates `~/.cursor/worktrees/<repo>/<name>` even with `CURSOR_CONFIG_DIR` set; the default base is the current HEAD; setup scripts come from `.cursor/worktrees.json` |
 
 ## Hooks
 
 | | Claude Code | Codex CLI | Gemini CLI | Cursor CLI |
 |---|---|---|---|---|
-| File | `.claude/settings.json` under `hooks` | `.codex/hooks.json`; each hook also needs trust (`/hooks` in the TUI) or it does not run | `.gemini/settings.json` under `hooks` | `.cursor/hooks.json` with `"version": 1` |
+| File | `.claude/settings.json` under `hooks` | `.codex/hooks.json`; each hook also needs trust (`/hooks` in the TUI) or it does not run | `.gemini/settings.json` under `hooks` | `.cursor/hooks.json` with `"version": 1` (the command arrives as top-level `command`; exit 2 blocks, exit 1 does not). The CLI also runs `.claude/settings.json` hooks |
 | Before a tool runs | `PreToolUse` | `PreToolUse` | `BeforeTool` | `preToolUse`, `beforeShellExecution` |
 | When the agent stops | `Stop` | `Stop` | `AfterAgent` | `stop` |
 | Timeout unit | seconds | seconds | milliseconds | not documented |
@@ -73,7 +73,7 @@ The workshop's gates are git hooks, not harness hooks, precisely so they work th
 | Cursor CLI | `agent -p "<prompt>" --output-format json` | `--model <model>` | `--force` |
 
 <Aside type="tip">
-`-p` means prompt in three of the four and profile in Codex. Codex takes the prompt as a plain argument.
+`-p` means prompt in three of the four and profile in Codex. Codex takes the prompt as a plain argument. Cursor's `agent -p` does not wait on stdin (tested). In headless runs, Cursor MCP tool calls need `--force`.
 </Aside>
 
 ## Where this came from

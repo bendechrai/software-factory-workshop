@@ -42,8 +42,8 @@ Do this the day before. It takes about twenty minutes, most of it waiting on dow
        curl https://cursor.com/install -fsS | bash
        agent --version
        ```
-       The command-line agent is called `agent`. The workshop uses it rather than the editor, so that every step is a command you can copy.
-       Written from the docs, not run.
+      The command-line agent is called `agent`. The workshop uses it rather than the editor, so that every step is a command you can copy.
+      Tested with Cursor CLI 2026.10.01: `agent --version` works. The install command itself was not run, because Cursor was already installed.
      </TabItem>
    </Tabs>
 
@@ -142,8 +142,11 @@ Act 1 starts every attendee from the same place: your own harness, with none of 
     alias agent-workshop='CURSOR_CONFIG_DIR=~/.cursor-workshop agent'
     agent-workshop
     ```
-    Cursor documents `CURSOR_CONFIG_DIR` as the location of the CLI configuration file. Whether it also moves your MCP servers, hooks and skills is not documented, so check with `agent-workshop mcp list` once it starts. If you still see your servers, disable them for the two days with `agent mcp disable <name>`.
-       Written from the docs, not run.
+    `CURSOR_CONFIG_DIR` moves only the CLI config, the sign-in record and your chats. It does NOT isolate MCP servers (`~/.cursor/mcp.json`), hooks (`~/.cursor/hooks.json`), skills (`~/.cursor/skills`, `~/.claude/skills`) or transcripts (`~/.cursor/projects`). Run `agent-workshop login` first, then `agent-workshop mcp list`. You will probably still see your servers, so disable each one for the two days with `agent mcp disable <name>` (tested: the status becomes `disabled`). Be aware that your global hooks still run.
+
+    `--model <id>` is saved as the default, so a typo sticks until you pass another model. Named models need a paid Cursor plan. The Free plan allows only `auto` and has a usage limit (about 25 short headless runs exhausted it).
+
+    Tested with Cursor CLI 2026.10.01 (sandbox behaviour, on a Free plan).
      </TabItem>
 </Tabs>
 
