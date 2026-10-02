@@ -64,7 +64,7 @@ from whatever it was.
    Read .claude/agents/implementer.md and follow it exactly.
    Worktree: <repo>.worktrees/feat-<change>-g<g>, branch feat/<change>-g<g>, from origin/main (new-feature skill).
    Ports: E2E_PORT=<4390 + g> for every e2e run and for every push (E2E_PORT=<4390 + g> git push ...), because the pre-push gate runs the browser test.
-   Evidence folder: evidence/<change>/g<g>/ (not evidence/<change>/, which another group may also be writing).
+   Evidence folder: evidence/<change>/g<g>/ (not evidence/<change>/, which another group may also be writing). If tasks.md names an evidence path, use that path exactly instead.
    Do only the tasks of group <g>. Touch only the files design.md names for group <g>.
    Do not start a reviewer and do not merge: the orchestrator does both.
    When the PR is open: agentboard link <id> --pr <n> --as impl-g<g>, then
@@ -108,6 +108,11 @@ from whatever it was.
      check, and "clearly shows" without looking is a failed verify. An
      `expectText` is a substring match, and a step file with no wait after a
      submit can race and drop a row while every step still passes.
+   - Every image link in the PR body works. Take each URL from the body
+     (`gh pr view <n> --json body`), run
+     `curl -sIL -o /dev/null -w '%{http_code}' <url>` and confirm 200 before
+     you accept. Each link must name a sha that exists
+     (`git cat-file -t <sha>`) and is in the PR. A 404 is a failed verify.
    - Every waiver is written as `Waived: <gate> - <reason>` and the reason
      holds up.
    - `agentboard show <id>` shows the PR link and the handoff to `orch`.
@@ -135,8 +140,11 @@ from whatever it was.
    agentboard comment <id> "Reviewer brief for PR #<n>: change <change>, head <headRefOid>, see .agents/review/briefs/pr-<n>.md" --as orch
    ```
    Then dispatch the configured reviewer agent (Claude Code: `reviewer`,
-   model `opus`; Codex: the `reviewer` agent in `.codex/agents/`) with this
-   prompt:
+   model `opus`; Codex: the `reviewer` agent in `.codex/agents/`). Name the
+   spawned task `review_pr<n>` (Codex: `task_name: "review_pr<n>"`), for
+   example `review_pr13`. The task name is plaintext and always reaches the
+   reviewer, even when the message does not, so the PR number rides on it.
+   Send this prompt:
 
    ```
    You are actor reviewer. Read .agents/review/briefs/pr-<n>.md first: it
@@ -147,7 +155,9 @@ from whatever it was.
    ```
 
    Then check it was posted: `gh pr view <n> --json reviews` and
-   `agentboard show <id>`.
+   `agentboard show <id>`. Reject a review that has no `MODEL:` line after
+   `SCORE:`: send it back to the reviewer to add it, and check the line
+   names the configured reviewer model.
 
    If the configured reviewer fails twice, block the ticket for a human with
    a comment (`agentboard comment <id> "Reviewer failed twice: <error>. Needs
@@ -186,13 +196,20 @@ from whatever it was.
      (`blob/<merge sha>/evidence/...png?raw=true`) with
      `gh pr edit <n> --body-file <file>`, and check each returns 200 with
      `curl -sIL`.
+   - Delete the reviewer's brief now that the review is posted, so a stale
+     brief cannot be picked up by a later reviewer:
+     `rm -f .agents/review/briefs/pr-<n>.md`
    - Clean up from the main checkout:
      ```
      git -C <repo> pull --ff-only
      git worktree remove <repo>.worktrees/feat-<change>-g<g>
      git branch -D feat/<change>-g<g>
      git worktree prune
+     git remote prune origin
      ```
+     `gh pr merge --delete-branch` may already have removed the worktree;
+     if `git worktree remove` says it is not a working tree, say only that,
+     not who removed it.
 
 10. **Keep the other open PRs current.** After every merge, for each open
     PR of the change: `git fetch origin` and check it is still based on
@@ -223,11 +240,22 @@ from whatever it was.
     synced specs under `openspec/specs/`, commit on main with a message
     that says why, and push (the pre-push gate runs).
 
-13. **Record the cost.** With Codex, cost comes from the OpenRouter usage
-    lines in `.agents/loop/loop.log` (usage before and after each
-    iteration), not from the ledger, which reads Claude Code logs only and
-    prints $0 for a Codex run. Put the difference in the run's report. With
-    Claude Code, from the repository folder (for example
+    Then tidy up what this run left behind:
+    - Delete the temp files this run created: the `/tmp/*` and `$TMPDIR/*`
+      files named in the run's commands and the agents' reports (PR body
+      files, backups, screenshot copies). Delete only those, by name.
+    - `git remote prune origin` (stale tracking refs of merged branches).
+    - Tick the board checklist on each closed ticket, or say in the report
+      that `tasks.md` is the record and the board checklist was not ticked.
+
+13. **Record the cost.** With Codex (OpenRouter), the orchestrator cannot
+    see the spend of its own session: the loop writes the usage line to
+    `.agents/loop/loop.log` only after the harness exits. Say so in one
+    line ("Cost: not visible from inside the run; see .agents/loop/loop.log,
+    where the loop records OpenRouter usage before and after each
+    iteration") and do not ask for or invent a figure. The ledger reads
+    Claude Code logs only and prints $0 for a Codex run, so do not use it.
+    With Claude Code, from the repository folder (for example
     `~/workshop/hop`), not from the workshop clone. The ledger finds the
     project from the current folder:
     ```

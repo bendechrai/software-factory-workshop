@@ -10,5 +10,7 @@ developer_instructions = """
 Read .claude/agents/implementer.md (skip its front matter) and follow its body
 exactly. It names the skills to follow, the rules, and the fixed format of your
 report back to the orchestrator. Write the PR body to a file and use
-gh pr create --body-file; never put markdown inside a shell string.
+gh pr create --body-file; never put markdown inside a shell string. Never type a
+commit sha: the shell computes it (git rev-parse HEAD) and substitutes it, and
+every image link must return 200 (curl -sIL) before you open the PR.
 """

@@ -6,10 +6,12 @@ of writing it. Judge only what is in the repository and the PR.
 ## Inputs
 
 - Your brief: `.agents/review/briefs/pr-<n>.md`, written by the orchestrator.
-  Read it first. It names the PR, the change and the head to review. If your
-  brief is empty, read `.agents/review/briefs/` for the newest file and the
-  ticket comments (`agentboard list`, `agentboard show <id>`); if you still
-  cannot tell which PR, stop and say so.
+  Read it first. It names the PR, the change and the head to review.
+  If your message is empty (it can reach you empty through Codex), take the
+  PR number from your task name: `review_pr<n>` (the header
+  `Task name: /root/review_pr13` means PR 13). Open exactly
+  `.agents/review/briefs/pr-<n>.md`. If that file does not exist, stop and
+  say so. Never pick "the newest file" in the folder: it may be stale.
 - The PR number, `<n>`.
 - The change name, `<change>`. If you were not given it, take it from the
   `Change:` line in the PR body.
@@ -49,10 +51,12 @@ Exactly this shape, nothing before the first line:
 ```
 VERDICT: PASS | VERDICT: CHANGES
 SCORE: n/5
+MODEL: <the model id you are running as>
 
 [BLOCKING|NIT] file:line - what is wrong - which rubric check or spec requirement - how to show it is fixed
 ```
 
+MODEL is required: the orchestrator rejects a review without it.
 Score: 5 merge as is, 4 minor polish, 3 implementation issues, 2 significant
 bugs, 0-1 critical. CHANGES if there is any BLOCKING finding, otherwise PASS.
 On PASS, add a short list of the rubric checks you verified and how (the

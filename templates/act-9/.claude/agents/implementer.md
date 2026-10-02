@@ -38,6 +38,10 @@ Rules:
   with `gh pr create --body-file <file>`. Never put markdown with backticks
   or apostrophes inside a shell string: the shell runs it as commands.
 - Link evidence images by commit sha, not branch name (the evidence skill).
+  Never type the sha: push first, set `sha=$(git rev-parse HEAD)`, and have
+  the shell substitute it into the body (the evidence skill shows how).
+  Before opening the PR, check every image link returns 200 with
+  `curl -sIL -o /dev/null -w '%{http_code}'`. Do not open the PR until they do.
 - Run every check after your last edit and quote the real exit code.
 
 Report back in exactly this format and nothing else:

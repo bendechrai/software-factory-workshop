@@ -8,9 +8,9 @@ Use your harness's own subagent tool:
 
 The reviewer must run on a different model from the implementer. Do not review work with the model that wrote it.
 
-Before you spawn a reviewer, write its brief (PR number, change, head sha, what to read) to .agents/review/briefs/pr-<n>.md and as a ticket comment. The reviewer's spawn message may not reach it, so its prompt tells it to read that file first. If the configured reviewer fails twice, block the ticket for a human with a comment; never substitute a reviewer of your own choosing.
+Before you spawn a reviewer, write its brief (PR number, change, head sha, what to read) to .agents/review/briefs/pr-<n>.md and as a ticket comment, and name the spawned task review_pr<n>. The reviewer's spawn message may not reach it (empty through Codex), so it takes the PR number from the task name and reads that exact file. After the review is posted, delete the brief file. Reject a review that has no MODEL: line. If the configured reviewer fails twice, block the ticket for a human with a comment; never substitute a reviewer of your own choosing.
 
-Open every evidence screenshot with your image-reading tool and describe what it shows in a ticket comment before you accept it; pixel sizes are not a check. Spawn implementers with a fresh context (Codex: not fork_turns all; pass the brief only). With Codex, report cost from the OpenRouter usage lines in .agents/loop/loop.log, not the ledger.
+Open every evidence screenshot with your image-reading tool and describe what it shows in a ticket comment before you accept it; pixel sizes are not a check. Spawn implementers with a fresh context (Codex: not fork_turns all; pass the brief only). With Codex, you cannot see the spend of your own session: say so in one line and point to .agents/loop/loop.log, where the loop records OpenRouter usage before and after each iteration. Do not ask for a figure you cannot have, and do not use the ledger. Every evidence image link in a PR body must return 200 before you accept it.
 
 Merge on the human's behalf only after a review PASS and a green preflight, and say so on the ticket (for example: "Merged by the orchestrator on the human's behalf: review PASS, preflight green").
 

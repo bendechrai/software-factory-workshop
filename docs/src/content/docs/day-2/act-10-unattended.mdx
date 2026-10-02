@@ -87,9 +87,9 @@ Use your `hop` repository from act 9.
 5. **Propose a small change and import its tickets.** Pick something small, such as a tiny addition to the home page. Use the `openspec-propose` flow, run `openspec validate <change> --strict`, then `agentboard import-change <change> --as orch`. Keep it to one or two task groups. You own the spec, as in act 9.
 
    <Aside type="caution" title="Read this before the next step">
-   The loop has now run for real once, with Codex CLI through OpenRouter. That run proved the loop and its guards ended normally ("board empty", exit 0), that headless orchestration works end to end, and that merges happened only under the gates: exact-head preflight and a posted review PASS before each one.
+   The loop has now run for real twice, with Codex CLI through OpenRouter. The first run proved the loop and its guards ended normally ("board empty", exit 0), that headless orchestration works end to end, and that merges happened only under the gates: exact-head preflight and a posted review PASS before each one.
 
-   It did not prove the review step. The configured reviewer worked as designed for only part of the run. The fixes made afterwards (listed in "What you see") have not had a second real run yet. The `HARNESS_CMD` lines for Gemini CLI and Cursor were written from their docs, not run.
+   The first run did not prove the review step. The second run checked the fixes made afterwards (listed in "What you see"). Most held, and a strict check of it still found four new problems, now fixed in the templates but not yet run a third time. The `HARNESS_CMD` lines for Gemini CLI and Cursor were written from their docs, not run.
 
    The default Claude Code `HARNESS_CMD` also carries an `--allowedTools` list, so a headless session can run the shell commands the orchestrate skill needs (`git`, `gh`, `agentboard`, `npm`, `npx`, `node`, `openspec`) and the file tools. Without it, `acceptEdits` does not approve shell commands, and a headless session would stall on the first one. That permission set is untested in a real loop. Check the first iteration's `.err` and output files in `.agents/loop/runs/` for refused tools.
 
@@ -263,7 +263,7 @@ A separate verifier checked the run strictly afterwards, on a different model, f
 | Backticks in a shell string ran as commands | With the sandbox off, markdown inside a quoted `gh pr create --body` string was executed by the shell. | Write PR bodies to a file and use `--body-file` (`templates/act-9/.claude/agents/implementer.md`, the evidence skill) |
 | Screenshot links went dead | All three PR bodies linked to branches that the squash merge deleted, so the images returned 404. | After the merge, rewrite each image link to the merge commit and check it returns 200 (`SKILL.md` step 9). The three loop PRs were repointed by hand. |
 | The run record lacked models and spawns | The run JSON shows no spawn calls and no model names. Only `~/.codex-loop` did. | The loop copies the session files of each iteration into `runs/<run>-sessions/` (`templates/act-10/bin/factory-loop.sh`) |
-| The cost hint showed $0 | The printed hint points at the Claude ledger. The run cost about $4.73 on OpenRouter. | The loop writes OpenRouter usage lines to `loop.log`, and the orchestrator reports cost from them (`factory-loop.sh`, `SKILL.md` step 13, `prompt.md`). The hint now prints the ledger command only for a `claude` harness. For any other harness it prints the OpenRouter spend of the loop (first and last usage and the difference), or says the cost is not visible to the ledger. |
+| The cost hint showed $0 | The printed hint points at the Claude ledger. The run cost about $4.73 on OpenRouter. | The loop writes OpenRouter usage lines to `loop.log`, and the cost is read from them afterwards (`factory-loop.sh`). The second run showed the orchestrator cannot read them during the run, so step 13 now says so and points to `loop.log`. The hint now prints the ledger command only for a `claude` harness. For any other harness it prints the OpenRouter spend of the loop (first and last usage and the difference), or says the cost is not visible to the ledger. |
 | Implementers started with the orchestrator's whole context | All three were spawned with `fork_turns: "all"`, so they inherited "You are the orchestrator" and a long history. | Spawn them with a fresh context and pass the brief only (`SKILL.md` step 5, `prompt.md`) |
 
 ### The follow-up, PR #12
@@ -278,6 +278,49 @@ After the run, the verifier checked main (commit `014d6fd`) without changing any
 - `npm run e2e` passed 5 of 5 times on one worker (11 tests each). Five passes alone prove little: with a failure rate near 1 in 20, an unfixed suite would pass five times in a row about 77% of the time. The fix is credible because of how it works. With one worker, the files run in name order, and the export test deletes its link before the empty-database test runs.
 - The full preflight passed, with every gate green.
 - The board was empty and `agentboard health` was clean. One worktree was left, and the remote had only `main`.
+
+### The second run
+
+After the fixes above, the loop ran once more on a laptop with the same setup. It took one ticket, the change `reserved-routes-guard` (a guard so a code can never clash with a mounted route), as PR #13. It ran for about 9 minutes (8m34s in `loop.log`), merged the PR as `0579845`, archived the change, and ended with the board empty. Spend was $0.69, worked out from `loop.log`: usage went from 8.814787346 to 9.501280946, a difference of $0.6865. The first run cost about $4.73 for 3 PRs.
+
+A second strict check, again from the records, looked at each of the ten first-run findings:
+
+| First-run finding | Result | Evidence |
+|---|---|---|
+| Reviewer brief reached the reviewer | HELD IN PART | The reviewer read `pr-13.md`, but the spawn message still arrived empty. It got "13" from the task name `review_pr13`. |
+| The configured reviewer model ran | HELD | The reviewer thread ran `anthropic/claude-sonnet-5.5` and viewed a screenshot. |
+| No reviewer substitution | HELD | One reviewer spawn, no model override, one review on the head. |
+| Screenshots looked at | HELD | Both PNGs opened with `view_image` and described on the ticket. The reviewer opened one and used `cmp` for the other. |
+| Untested scenario or silent design change | HELD IN PART | Every scenario has a test and no design value changed. The evidence went to `g1/` where tasks.md said otherwise, and nobody said so. |
+| Shell injection | HELD | The body went through `--body-file`, and no command had a stray backtick. |
+| Evidence links by sha | HELD IN PART | Correct after the merge, but the implementer's original links named a sha that does not exist and returned 404 until the rewrite. |
+| Run record has models and spawns | HELD IN PART | The three session files are in the run folder. Reviews still do not name their model. |
+| Cost recorded | HELD IN PART | `loop.log` has the usage lines. The orchestrator could not see them and reported "no cost was reportable". |
+| Fresh context for implementers | HELD | Both spawns used `fork_turns: "none"`. |
+
+The check found four things that did not work, and each now has a fix in the templates:
+
+| New finding | How it showed up | Fix now in the templates |
+|---|---|---|
+| The implementer made up a commit sha | The PR body linked `3b2b92cd` followed by invented characters. The real head was `3b2b92cd6c25...`. All image links returned 404 from creation until the post-merge rewrite, through verify and review. A quoted heredoc stopped the computed `$sha` from expanding, so the model typed one. | The shell substitutes the real sha and the model never types it. Every image link must return 200 against the pushed branch before the PR opens, and the orchestrator opens each link in step 6 and confirms 200 (`templates/act-9/.agents/skills/evidence/SKILL.md` step 6, `implementer.md`, `orchestrate/SKILL.md` step 6) |
+| The orchestrator cannot see its own spend | The loop writes the usage line after the harness exits, so step 13 asked for a figure the orchestrator could not have. | Step 13 and `templates/act-10/.agents/loop/prompt.md` say so in one line and point to `loop.log` |
+| The reviewer's brief hung on a guess | Spawn messages reach non-OpenAI models empty, so the reviewer worked out the PR from the task name, with a "newest file" fallback that fails with two PRs open. | The task is named `review_pr<n>`, the brief is `.agents/review/briefs/pr-<n>.md`, the reviewer takes `<n>` from its task name, opens exactly that file and stops if it is missing, and the orchestrator deletes the brief after the review (`orchestrate/SKILL.md` steps 7 and 9, `reviewer.md`, `prompt.md`) |
+| Reviews did not name their model | Reviews post from one account, so only the session files showed the model. | The review output has a `MODEL:` line after `SCORE:`, and the orchestrator rejects a review without it (`reviewer.md`, step 7) |
+
+Smaller gaps got smaller fixes: the brief template now says to use the evidence path tasks.md names, and the cleanup step deletes the run's temp files, runs `git remote prune origin`, and ticks the board checklist or says that `tasks.md` is the record.
+
+Cost by model, from each thread's final token count. OpenRouter's key endpoint does not split spend by model, so there is no dollar figure per model:
+
+| Thread | Model | Input tokens | Cache reads | Output tokens |
+|---|---|---|---|---|
+| orchestrator | `openai/gpt-5.6-sol` | 1,332,506 | 1,268,393 | 6,957 |
+| implementer | `openai/gpt-5.3-codex` (low) | 761,596 | 709,376 | 7,609 |
+| reviewer | `anthropic/claude-sonnet-5.5` (low) | 290,824 | 0 | 2,819 |
+| Total | | 2,384,926 | 1,977,769 | 17,385 |
+
+The reviewer read nothing from the cache, so 71% of the run's uncached input was the one reviewer thread. Prompt caching does not appear to be active for the Anthropic model through Codex and OpenRouter.
+
+What it shows: the fixes mostly held, a second strict check still found a fabricated sha that the loop's own verify and review missed, and verification after every run is not optional.
 
 ### The test results
 
