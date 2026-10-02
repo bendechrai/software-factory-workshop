@@ -43,12 +43,12 @@ one, must come last in the command.
 |---|---|
 | Claude Code | `claude -p --allowedTools Bash(git:*),Bash(gh:*),Bash(agentboard:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(openspec:*),Read,Edit,Write,Glob,Grep --permission-mode acceptEdits --output-format json --max-budget-usd 5` |
 | Codex | `codex exec --sandbox workspace-write --json` |
-| Gemini CLI | `GEMINI_CLI_TRUST_WORKSPACE=true` and `gemini --approval-mode yolo -o json -p` |
+| Gemini CLI | `GEMINI_CLI_TRUST_WORKSPACE=true` and `gemini --approval-mode yolo -o json -m <model> -p` |
 | Cursor | `agent -p --force --output-format json` |
 
 Notes from `research/harnesses-2026-10-01.md`: Codex takes the prompt
 positionally (its `-p` means profile). Gemini's `-p` takes the prompt as its
-value, which is why it goes last. For Gemini use `yolo`, not `auto_edit`: headless, `auto_edit` removes the shell tool, so the loop cannot run git, npm, gh or agentboard. `yolo` runs every command with your user permissions (like the Codex sandbox-off note), so use it only where you accept that, and use a paid key because a free key allows about 20 requests a day per model. Tested with Gemini CLI 0.62.0 (flags only; the loop itself was not run with Gemini). Cursor needs `--force` or it only proposes
+value, which is why it goes last. For Gemini use `yolo`, not `auto_edit`: headless, `auto_edit` removes the shell tool, so the loop cannot run git, npm, gh or agentboard. `yolo` runs every command with your user permissions (like the Codex sandbox-off note), so use it only where you accept that, and use a paid key because a free key allows about 20 requests a day per model. Always pass `-m <model>`: without it Gemini CLI picks `gemini-3.1-pro`, which a free key cannot use at all. Tested with Gemini CLI 0.62.0 (flags only). On 2026-10-02 a real run with Gemini CLI 0.62.0 and a free AI Studio key failed: with no `-m` flag, Gemini CLI chose `gemini-3.1-pro`, which has no free quota, and the harness exited 173 before doing any work (429 "Quota exceeded ... free_tier_requests, limit: 0, model: gemini-3.1-pro"). The loop's guards worked: it logged the failure, stopped at the iteration cap (MAX_ITERATIONS=1), and left the ticket untouched. The loop has not completed a run with Gemini. Cursor needs `--force` or it only proposes
 changes. Only Claude Code has a per-run budget flag here, so with the others
 the guards below are your only cost control; keep `MAX_ITERATIONS` small.
 

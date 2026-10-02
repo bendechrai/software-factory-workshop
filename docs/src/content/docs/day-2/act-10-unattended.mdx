@@ -137,10 +137,10 @@ Use your `hop` repository from act 9.
      </TabItem>
      <TabItem label="Gemini CLI">
        ```bash
-       GEMINI_CLI_TRUST_WORKSPACE=true HARNESS_CMD="gemini --approval-mode yolo -o json -p" MAX_ITERATIONS=3 bin/factory-loop.sh
+       GEMINI_CLI_TRUST_WORKSPACE=true HARNESS_CMD="gemini --approval-mode yolo -o json -m gemini-3-flash-preview -p" MAX_ITERATIONS=3 bin/factory-loop.sh
        ```
-       Gemini's `-p` takes the prompt as its value, so it goes last. Use `--approval-mode yolo`, not `auto_edit`: headless, `auto_edit` removes the shell tool, so the loop could not run `git`, `npm`, `gh` or `agentboard`. Be aware that `yolo` runs every command with your user permissions, like the Codex sandbox-off note above. Use it only on a machine and account where you accept that. Also set `GEMINI_CLI_TRUST_WORKSPACE=true`, and use a paid key, because a free key's quota (about 20 requests a day per model) runs out quickly.
-       Tested with Gemini CLI 0.62.0: `-p`, `-m`, `-o json` and `--approval-mode yolo` (shell commands ran). The loop itself was not run with Gemini.
+       Always pass `-m <model>`. Without it Gemini CLI picks `gemini-3.1-pro`, which a free key cannot use at all. Gemini's `-p` takes the prompt as its value, so it goes last. Use `--approval-mode yolo`, not `auto_edit`: headless, `auto_edit` removes the shell tool, so the loop could not run `git`, `npm`, `gh` or `agentboard`. Be aware that `yolo` runs every command with your user permissions, like the Codex sandbox-off note above. Use it only on a machine and account where you accept that. Also set `GEMINI_CLI_TRUST_WORKSPACE=true`, and use a paid key, because a free key's quota (about 20 requests a day per model) runs out quickly.
+       Tested with Gemini CLI 0.62.0: `-p`, `-m`, `-o json` and `--approval-mode yolo` (shell commands ran). The loop itself has not completed a run with Gemini. On 2026-10-02 a real run with Gemini CLI 0.62.0 and a free AI Studio key failed: with no `-m` flag, Gemini CLI chose `gemini-3.1-pro`, which has no free quota, and the harness exited 173 before doing any work (429 "Quota exceeded ... free_tier_requests, limit: 0, model: gemini-3.1-pro"). The loop's guards worked: it logged the failure, stopped at the iteration cap (MAX_ITERATIONS=1), and left the ticket untouched. The loop has not completed a run with Gemini.
      </TabItem>
      <TabItem label="Cursor">
        ```bash

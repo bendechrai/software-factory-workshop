@@ -69,7 +69,7 @@ The workshop's gates are git hooks, not harness hooks, precisely so they work th
 |---|---|---|---|
 | Claude Code | `claude -p "<prompt>" --output-format json` | `--model sonnet` | `--permission-mode acceptEdits` |
 | Codex CLI | `codex exec "<prompt>" --json` | `-m <model>` | `--sandbox workspace-write` |
-| Gemini CLI | `gemini --approval-mode yolo -o json -p "<prompt>"` | `-m <model>` | `--approval-mode yolo` (`auto_edit` removes the shell tool headless; `yolo` runs every command with your user permissions) |
+| Gemini CLI | `gemini --approval-mode yolo -o json -m <model> -p "<prompt>"` | `-m <model>` | `--approval-mode yolo` (`auto_edit` removes the shell tool headless; `yolo` runs every command with your user permissions). `-m` is required in the loop: without it Gemini CLI picks `gemini-3.1-pro`, which a free key cannot use at all. On 2026-10-02 a real run with Gemini CLI 0.62.0 and a free AI Studio key failed: with no `-m` flag, Gemini CLI chose `gemini-3.1-pro`, which has no free quota, and the harness exited 173 before doing any work (429 "Quota exceeded ... free_tier_requests, limit: 0, model: gemini-3.1-pro"). The loop's guards worked: it logged the failure, stopped at the iteration cap (MAX_ITERATIONS=1), and left the ticket untouched. The loop has not completed a run with Gemini. |
 | Cursor CLI | `agent -p "<prompt>" --output-format json` | `--model <model>` | `--force` |
 
 <Aside type="tip">
