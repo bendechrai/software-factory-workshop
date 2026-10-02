@@ -1,0 +1,36 @@
+# Deploys the workshop site to GitHub Pages on every push to main.
+# This is the one hosted workflow in the repository: it publishes the docs.
+# The demo app's gates run locally as git hooks, not here.
+name: Deploy docs to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', '.github/workflows/deploy-docs.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: withastro/action@v3
+        with:
+          path: ./docs
+          node-version: 22
+          package-manager: npm@latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
