@@ -71,7 +71,7 @@ Summary: 4 PASS, 3 PASS with doc corrections, 4 FAIL. The FAILs are the hooks tr
   - **Stale value in the demo repo:** the hop-demo `act-9` tag still has `model = "gpt-5.5-codex"` in implementer.toml, so it is stale against the template (`openai/gpt-5.3-codex`).
   - **Corrected text for act-8-review.mdx:51:** "`.codex/agents/reviewer.toml` with a `model` that differs from the implementer's. On OpenRouter use the provider-prefixed id, for example `openai/gpt-5.5` (the implementer uses `openai/gpt-5.3-codex`). `gpt-5.5-codex` is not a valid OpenRouter id." Fix the reviewer.toml template too, and the hop-demo act-9 tag's implementer.toml.
   - I only tested the failure path; I did not run a reviewer with a valid model.
-- **Mock subagent reply:** the implementer's one-line reply was garbled ("Codex — Very important: ...") on the luna model; spawn and role loading worked, and I did not look further into the reply.
+- **Mock subagent reply:** the implementer's one-line reply was garbled ("Codex - Very important: ...") on the luna model; spawn and role loading worked, and I did not look further into the reply.
 
 ## 7. Headless (act-10-unattended.mdx:110-137; harnesses.mdx:67-76): PASS, with a sandbox caveat
 - **Ran:** `codex exec "<prompt>" -C <dir> --json -m openai/gpt-5.6-luna --sandbox workspace-write -o last.txt`. All flags are accepted.
