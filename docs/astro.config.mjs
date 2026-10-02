@@ -22,7 +22,7 @@ export default defineConfig({
 				{
 					label: 'Start here',
 					items: [
-						{ label: 'Welcome', slug: '' },
+						{ label: 'Welcome', link: '/' },
 						{ label: 'What a software factory is', slug: 'start/what-a-factory-is' },
 						{ label: 'The two days at a glance', slug: 'start/agenda' },
 						{ label: 'Before you arrive', slug: 'start/before-you-arrive' },
@@ -30,15 +30,15 @@ export default defineConfig({
 				},
 				{
 					label: 'Day 1: from prompt to pipeline',
-					autogenerate: { directory: 'day-1' },
+					items: [{ autogenerate: { directory: 'day-1' } }],
 				},
 				{
 					label: 'Day 2: from pipeline to factory',
-					autogenerate: { directory: 'day-2' },
+					items: [{ autogenerate: { directory: 'day-2' } }],
 				},
 				{
 					label: 'Reference',
-					autogenerate: { directory: 'reference' },
+					items: [{ autogenerate: { directory: 'reference' } }],
 				},
 			],
 			customCss: ['./src/styles/custom.css'],
