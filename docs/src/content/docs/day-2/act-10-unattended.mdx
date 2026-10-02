@@ -9,6 +9,7 @@ sidebar:
 import { Steps, Code, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 import loopPrompt from '../../../../../templates/act-10/.agents/loop/prompt.md?raw';
 import loopScript from '../../../../../templates/act-10/bin/factory-loop.sh?raw';
+import codexConfig from '../../../../../templates/act-10/.agents/loop/codex-config.example.toml?raw';
 
 **The idea.** The factory runs without you at the keyboard. A small loop restarts the orchestrator in a fresh session each time. Each session has fresh context, and the state lives on disk: the board, the specs and git. A set of guards decides when the loop stops. You come back to merged PRs, a drained board, a log and a cost.
 
@@ -79,16 +80,16 @@ Use your `hop` repository from act 9.
    bash bin/factory-loop.test.sh
    ```
 
-   You should see 13 lines that start with PASS, and `13 passed, 0 failed` at the end. They are listed in the next section.
+   You should see 15 lines that start with PASS, and `15 passed, 0 failed` at the end. They are listed in the next section.
 
 5. **Propose a small change and import its tickets.** Pick something small, such as a tiny addition to the home page. Use the `openspec-propose` flow, run `openspec validate <change> --strict`, then `agentboard import-change <change> --as orch`. Keep it to one or two task groups. You own the spec, as in act 9.
 
    <Aside type="caution" title="Read this before the next step">
-   When this guide was built, the loop and every guard were tested only against the fake harness. The loop has not yet been run against a real harness from start to finish. The presenter runs it live. The `HARNESS_CMD` lines below for all four harnesses were written from their docs, not run.
+   The loop and every guard are tested against the fake harness (15 cases). Codex CLI has run headless end to end for single tasks, through OpenRouter, outside the sandbox trade-off described in the Codex tab. A full unattended loop run has not been done yet, and this page will be updated with its results. The `HARNESS_CMD` lines for Gemini CLI and Cursor were written from their docs, not run.
 
    The default `HARNESS_CMD` also carries an `--allowedTools` list, so a headless session can run the shell commands the orchestrate skill needs (`git`, `gh`, `agentboard`, `npm`, `npx`, `node`, `openspec`) and the file tools. Without it, `acceptEdits` does not approve shell commands, and a headless session would stall on the first one. This permission set is untested in a real loop. Check the first iteration's `.err` and output files in `.agents/loop/runs/` for refused tools.
 
-   The reason is simple. The guide was built inside one harness session, and starting a harness inside itself was deliberately avoided. So the next step is the first real run for you and for the presenter. Keep the limits small, watch the first iteration, and keep the stop file in mind.
+   Keep the limits small, watch the first iteration, and keep the stop file in mind.
    </Aside>
 
 6. **Run the real loop with your harness.** Keep the limits small for a first run. The default command is Claude Code, so with Claude Code you only need the limits:
@@ -99,7 +100,7 @@ Use your `hop` repository from act 9.
 
    For another harness, set `HARNESS_CMD`. The prompt is added as the last argument, so a prompt flag, if there is one, must come last.
 
-   <Tabs>
+   <Tabs syncKey="harness">
      <TabItem label="Claude Code">
        ```bash
        HARNESS_CMD="claude -p --allowedTools Bash(git:*),Bash(gh:*),Bash(agentboard:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(openspec:*),Read,Edit,Write,Glob,Grep --permission-mode acceptEdits --output-format json --max-budget-usd 5" MAX_ITERATIONS=3 bin/factory-loop.sh
@@ -107,22 +108,44 @@ Use your `hop` repository from act 9.
        This is the default. It is the only one with a per-run budget flag. The `--allowedTools` list has no spaces, because the loop splits the command on spaces, and it comes before the other flags, because the flag takes a list and would otherwise swallow the prompt. This permission set is untested in a real loop.
      </TabItem>
      <TabItem label="Codex CLI">
+       The setup and smoke tests below were run. The full loop run with Codex is pending.
+
+       Codex CLI 0.160.0 ran headless through OpenRouter with `npx -y @openai/codex`. Codex only speaks the Responses API, and OpenRouter serves it. Give Codex its own home folder, so the loop's config does not touch your normal one:
+
        ```bash
-       HARNESS_CMD="codex exec --sandbox workspace-write --json" MAX_ITERATIONS=3 bin/factory-loop.sh
+       mkdir -p ~/.codex-loop
+       cp .agents/loop/codex-config.example.toml ~/.codex-loop/config.toml
        ```
-       Codex takes the prompt as a plain argument. Its `-p` means profile, so it is not used here.
+
+       Then replace `<absolute repo path>` in the last section with your repo's absolute path. This is the config:
+
+       <Code code={codexConfig} lang="toml" title=".agents/loop/codex-config.example.toml" />
+
+       Run the loop with the key set for this command only, and `CODEX_HOME` pointing at that folder:
+
+       ```bash
+       OPENROUTER_API_KEY=<your key> CODEX_HOME=~/.codex-loop \
+       HARNESS_CMD="npx -y @openai/codex exec --json -C <absolute repo path>" \
+       MAX_ITERATIONS=3 MAX_MINUTES=150 bin/factory-loop.sh
+       ```
+
+       Codex takes the prompt as a plain argument, and its `-p` means profile, so it is not used. `codex exec` waits on stdin when it is not a terminal, so the loop passes `/dev/null` (a test proves it), and a multi-word `HARNESS_CMD` with `-C <path>` is parsed correctly (also tested).
+
+       **What ran.** Smoke tests: a file edit plus `git status`, then `gh api user` and `npm view`, at about $0.05 per short turn on `openai/gpt-5.6-sol` ($2 in, $10 out per million tokens). Inside Codex's `workspace-write` sandbox on macOS, `git fetch`, `git worktree add`, commits, `npm ci`, `agentboard` and `gh` worked. npm's cache had to be redirected inside the sandbox.
+
+       **The sandbox trade-off.** Chromium could not start in that sandbox (mach port permission denied), so the browser test, the evidence capture and the pre-push preflight fail. `git push` likely fails on the keychain credential helper, but that is unconfirmed. The only way found to run the gates was `sandbox_mode = "danger-full-access"`. With `approval_policy = "never"`, Codex then acts unattended with your full user permissions. The example config says so. Run it only on a machine and account where you accept that.
      </TabItem>
      <TabItem label="Gemini CLI">
        ```bash
        HARNESS_CMD="gemini --approval-mode auto_edit -o json -p" MAX_ITERATIONS=3 bin/factory-loop.sh
        ```
-       Gemini's `-p` takes the prompt as its value, so it goes last.
+       Gemini's `-p` takes the prompt as its value, so it goes last. Written from the docs, not run.
      </TabItem>
      <TabItem label="Cursor">
        ```bash
        HARNESS_CMD="agent -p --force --output-format json" MAX_ITERATIONS=3 bin/factory-loop.sh
        ```
-       Without `--force`, Cursor only proposes changes and does not write them.
+       Without `--force`, Cursor only proposes changes and does not write them. Written from the docs, not run.
      </TabItem>
    </Tabs>
 
@@ -148,6 +171,14 @@ Use your `hop` repository from act 9.
 
 </Steps>
 
+### Running the loop with another vendor's harness
+
+The loop is harness agnostic: it runs one command with the prompt as the last argument and reads the exit code. To prove that outside the harness this guide was built in, Codex CLI was run through OpenRouter. See the Codex tab for the setup and what ran.
+
+If macOS shows a security warning when Codex first runs, the package was checked. Every executable in the npm package is signed by OpenAI's Developer ID (team 2DC432GLL2), has the hardened runtime and no quarantine flag, and the system log showed no malware detection. If macOS says it cannot check the app, use System Settings, Privacy and Security, Open Anyway, or install it once with `brew install --cask codex` or `npm install -g @openai/codex`. If it says the app will damage your computer, do not override it.
+
+**Set a spending limit.** With Codex, the loop has no per-run budget flag (Claude Code has `--max-budget-usd`). The OpenRouter key's spending limit is the real ceiling, so set one before you run the loop unattended.
+
 ## What you see
 
 ### The test results
@@ -169,8 +200,10 @@ Use your `hop` repository from act 9.
 | 11 | PASS | a failing iteration is logged with `exit=3` and the loop continues (2 calls) |
 | 12 | PASS | `MAX_FAILURES` failed runs in a row end the loop with exit 2 (3 calls) |
 | 13 | PASS | an unknown argument exits 2 with usage |
+| 14 | PASS | the harness gets /dev/null on stdin (empty, not a tty) |
+| 15 | PASS | a multi-word `HARNESS_CMD` with `-C <path>` passes every word, then the prompt last |
 
-The last line was `13 passed, 0 failed`. `shellcheck bin/*.sh` also reported nothing. These are the fake harness results, not a real run. See the caution above.
+The last line was `15 passed, 0 failed`. `shellcheck bin/*.sh` also reported nothing. These are the fake harness results, not a real run. See the caution above.
 
 ### The guards and the exit codes
 
