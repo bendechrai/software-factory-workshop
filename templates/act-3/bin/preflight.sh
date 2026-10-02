@@ -51,7 +51,7 @@ trap cleanup EXIT
 
 gate_install()    { (cd "$WORK" && npm ci --no-audit --no-fund); }
 gate_verify()     { (cd "$WORK" && npm run verify); }
-gate_build()      { (cd "$WORK" && npm run build); }
+gate_build()      { (cd "$WORK" && npm run build --if-present); }
 gate_audit()      { (cd "$WORK" && npm audit --audit-level=high); }
 gate_migrations() {
   (cd "$WORK" && HOP_DB=":memory:" npm run migrate >/dev/null) || return 1
