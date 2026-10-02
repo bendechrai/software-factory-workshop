@@ -1,0 +1,225 @@
+---
+title: "Act 6: isolation"
+description: One worktree and one branch per ticket, merged through pull requests. Two agents build two features at the same time without overwriting each other, and you resolve the one conflict that does come up.
+sidebar:
+  order: 6
+  label: "Act 6: isolation"
+---
+
+import { Tabs, TabItem, Steps, Aside, Code } from '@astrojs/starlight/components';
+import skill from '../../../../../templates/act-6/.agents/skills/new-feature/SKILL.md?raw';
+
+**The idea.** Two agents working on one branch overwrite each other. One worktree and one branch per ticket, merged through pull requests, makes parallel work safe. Each agent gets its own folder, its own branch and its own pull request, and nothing lands on `main` until you merge it. This is the "isolate" station from the popular version of the factory, and it is the place this workshop agrees with it most.
+
+**Time:** about 55 minutes. 15 for the talk, 30 hands-on, 10 to compare.
+
+## The talk
+
+1. **A worktree is a second folder on the same repository.** `git worktree add` checks out another branch in another folder. The folders share the object store and the git config, but not files. That has two consequences you care about. Shared config means `core.hooksPath` applies in every worktree, so the commit and push gates from act 3 run there with no setup. Do not run `bin/setup-git-hooks.sh` again. Not sharing files means each worktree has its own `node_modules`, so it needs its own `npm ci`. It also has its own ports and its own databases, so two test runs can still collide on a port if you do nothing about it.
+2. **The board is shared.** Act 5 said agentboard finds the main checkout's `.board/` from every worktree. This is why. Two agents in two worktrees claim, move and hand off tickets on one board, and each can see what the other is doing.
+3. **Check scope before you start.** Before an agent creates a worktree it runs `git fetch origin` and `gh pr list --state open --json number,headRefName,files`. If an open pull request touches a file the ticket names, the agent stops, comments on the ticket and moves it to `blocked`. Two tickets that edit the same files are not parallel work, however they were planned.
+4. **Where worktrees go.** In a folder beside the repo, named `<repo>.worktrees`, with one subfolder per branch and slashes in the branch name replaced by hyphens. For `hop` on branch `feat/link-extras-g1`, that is `../hop.worktrees/feat-link-extras-g1`. Never put one inside the repo, where tools and searches will pick up the copy. Never put one as a plain sibling either, where a folder list becomes a mess.
+5. **Harnesses have their own worktree features, and the skill ignores them.** Some harnesses can create a worktree for you. The table lists what exists. The skill below uses plain `git worktree add`, so it works the same in all four, and the folder layout is the same everywhere.
+
+   | Harness | Native worktree support |
+   | --- | --- |
+   | Claude Code | `claude -w <name>` creates one for a session. A subagent with `isolation: worktree` gets its own temporary worktree. |
+   | Codex | The desktop app only. In the CLI, run `git worktree add` yourself and start with `codex -C <dir>`. |
+   | Gemini CLI | Experimental. Enable it in settings, then `gemini -w <name>`. |
+   | Cursor | `agent -w <name> --worktree-base main` in the CLI. |
+
+   Native features put the folder where the harness likes it, not where this workshop's layout says. That is the reason the skill does not rely on them.
+6. **A planned conflict is fine.** Two features will often share one line, such as a mount line in `src/app.ts`. Do not pretend otherwise. Write it into `design.md`: name the shared line, and say how the second pull request resolves it. Then it is a two minute rebase, not a surprise.
+7. **Pull requests are the merge gate.** Each branch is pushed through the pre-push gate, opened as a pull request with the checks listed in its body, and linked on the board. You review and merge. A merged pull request is what lets `agentboard close-merged` close the ticket.
+
+## The files
+
+The skill. Agents load it before any ticket, feature or fix. It is eight steps: claim, scope check, worktree, prepare, keep ports apart, work, ship, clean up.
+
+<Code code={skill} lang="md" title=".agents/skills/new-feature/SKILL.md" />
+
+You also add one line to `AGENTS.md`, after the last step of the Workflow list:
+
+```text
+Every ticket starts with the `new-feature` skill, in its own git worktree and branch, and never on main.
+```
+
+## Hands-on
+
+You are the orchestrator and the reviewer. Two agents are the implementers. Use your `hop` repository from act 5, with the `stats-page` change archived and clean.
+
+<Steps>
+
+1. **Copy the skill in and add the line to `AGENTS.md`.**
+
+   ```bash
+   cd hop
+   base=https://raw.githubusercontent.com/bendechrai/software-factory-workshop/main/templates/act-6
+   mkdir -p .agents/skills/new-feature
+   curl -fsSL "$base/.agents/skills/new-feature/SKILL.md" -o .agents/skills/new-feature/SKILL.md
+   ```
+
+   Open `AGENTS.md` and add the line above after the last step of the Workflow list. Commit both and push. On the demo run this was one commit, and the pre-commit hook and the pre-push gate both passed.
+
+2. **Propose a change with two groups that touch different files.** Use the propose command from act 4. Ask for two small, independent features, and ask for exactly two task groups. On the demo run they were a CSV export of all links at `GET /api/links.csv`, and a preview page at `GET /<code>+` that shows a link's details without redirecting and without counting a click. Name the change `link-extras`.
+
+   The point is the shape of the task list. Ask that each group keeps to its own files, and that each group puts its browser scenario in a new file, so the two branches do not edit the same test file. The demo run's `tasks.md` has these group titles:
+
+   ```text
+   ## 1. CSV export
+   ## 2. Link preview page
+   ```
+
+   And its `design.md` says what the groups share:
+
+   ```text
+   Both groups add one mount line to `src/app.ts`. That is the one expected merge conflict.
+   ```
+
+   It then lists the steps for the second pull request: rebase on `origin/main`, keep both lines and both imports, and mount the preview route before the redirect, or `abc+` is read as a short code. Validate it with `openspec validate link-extras`, read it, and commit it.
+
+3. **Import the tickets.**
+
+   ```bash
+   agentboard import-change link-extras --as orch
+   agentboard list --change link-extras
+   ```
+
+   ```text
+   created 01M3X951MCB8TDV968ZAACA504  todo  -  CSV export
+   created 01M3X951MWNF3N12XRGSX19HYG  todo  -  Link preview page
+   imported openspec:link-extras: 2 created, 0 updated, 0 unchanged, 2 events
+   ```
+
+   Your ids will differ.
+
+4. **Run two implementers at once.** Open two terminals in the main checkout of `hop`. Start a harness session in each. Give the first this prompt, with your own ticket id:
+
+   ```text
+   You are impl-1. Work ticket <id of CSV export> following the new-feature skill. Use E2E_PORT=4391.
+   ```
+
+   And the second:
+
+   ```text
+   You are impl-2. Work ticket <id of link preview page> following the new-feature skill. Use E2E_PORT=4392.
+   ```
+
+   Both agents start in the main checkout and create their own worktree from there. You can also let the harness do that part.
+
+   <Tabs syncKey="harness">
+     <TabItem label="Claude Code">
+       This is what the demo run used: two sessions started in the main checkout, each making its worktree with `git worktree add` as the skill says. To use the native feature instead, start each session with `claude -w feat-link-extras-g1` and `claude -w feat-link-extras-g2`. The folders then live under `.claude/worktrees/` inside the repo, which is not the layout in this act, so add `.claude/worktrees/` to `.gitignore`.
+     </TabItem>
+     <TabItem label="Codex CLI">
+       Run `git worktree add ../hop.worktrees/feat-link-extras-g1 -b feat/link-extras-g1 origin/main` yourself, then start `codex -C ../hop.worktrees/feat-link-extras-g1`. Do the same for group 2. Written from the docs, not run.
+     </TabItem>
+     <TabItem label="Gemini CLI">
+       Enable `{"experimental": {"worktrees": true}}` in settings, then start `gemini -w feat-link-extras-g1` and `gemini -w feat-link-extras-g2`. Written from the docs, not run.
+     </TabItem>
+     <TabItem label="Cursor">
+       Start `agent -w feat-link-extras-g1 --worktree-base main` and `agent -w feat-link-extras-g2 --worktree-base main`. Written from the docs, not run.
+     </TabItem>
+   </Tabs>
+
+   Each agent does the same eight things. The outputs are from the demo run.
+
+   1. **Claim.** `agentboard claim 01M3X951MCB8TDV968ZAACA504 --as impl-1` printed `01M3X951MCB8TDV968ZAACA504  todo  impl-1  CSV export`.
+   2. **Check scope.** Both ran `git fetch origin` and `gh pr list --state open --json number,headRefName,files`. Both got `[]`, so neither found an overlap.
+   3. **Create the worktree.** `git worktree add ../hop.worktrees/feat-link-extras-g1 -b feat/link-extras-g1 origin/main`, then `npm ci` inside it. The second agent used `feat-link-extras-g2` in the same way. Both confirmed `git config core.hooksPath` printed `.githooks` and the branch was not `main`.
+   4. **Write the tests.** Move the ticket to `tests`, then write them. impl-2 saw its route tests fail first, with a 404 where a 200 was expected. See the next section for impl-1.
+   5. **Implement.** Move to `implementing`. Tick only your own lines in `tasks.md`. `npm run verify` and `E2E_PORT=4391 npm run e2e` (4392 for impl-2) both passed.
+   6. **Push through the gate.** `git push -u origin feat/link-extras-g1`. The pre-push gate passed on the first attempt for both.
+   7. **Open the pull request.** `gh pr create --base main`, with the checks and their exit codes in the body. impl-2 opened PR #1, and impl-1 opened PR #2.
+   8. **Link it on the board and hand off.** `agentboard link <id> --pr 2 --as impl-1`, then `agentboard handoff <id> --to ben --status review --note "<PR url, what to look at>" --as impl-1`. The ticket printed `review  ben  CSV export`.
+
+   Both worktrees stay in place until the merge.
+
+5. **Review both pull requests.** Read each diff. Check that each group stays in its own files and ticked only its own tasks. On the demo run neither review had a blocking finding. The one nit was that the preview page's 404 for an unknown code comes from the redirect router after `next()`, which works but is indirect.
+
+6. **Merge one, rebase the other.** Merge the first with a squash, and delete its branch.
+
+   ```bash
+   gh pr merge 1 --squash --delete-branch
+   ```
+
+   Now the second pull request is behind `main`. From its worktree, follow the steps in `design.md`.
+
+   ```bash
+   cd ../hop.worktrees/feat-link-extras-g1
+   git fetch origin
+   git rebase origin/main
+   ```
+
+   Git stops on a conflict. Resolve it, keep both sides, then run the checks again and carry on.
+
+   ```bash
+   npm run verify
+   E2E_PORT=4391 npm run e2e
+   git rebase --continue
+   git push --force-with-lease
+   gh pr merge 2 --squash
+   ```
+
+   The force push goes through the pre-push gate again. After a squash merge the remote branch may be left behind. If it is, delete it with `git push origin --delete feat/link-extras-g1`.
+
+7. **Close the tickets from the merged pull requests.** Move both tickets to `merged` as the reviewer, then run:
+
+   ```bash
+   agentboard close-merged --as ben
+   ```
+
+   ```text
+   closed 01M3X951MCB8TDV968ZAACA504  merged  ben  [closed] CSV export (no decision)
+   closed 01M3X951MWNF3N12XRGSX19HYG  merged  ben  [closed] Link preview page (no decision)
+   close-merged: 2 closed, 0 unmerged, 0 skipped
+   ```
+
+   `agentboard list --change link-extras` then prints nothing, and `agentboard health` is all zeros.
+
+8. **Clean up the worktrees and branches.** From the main checkout, not from a worktree. Update `main` first, and run the checks there.
+
+   ```bash
+   git checkout main
+   git pull --ff-only
+   git worktree remove ../hop.worktrees/feat-link-extras-g1
+   git branch -d feat/link-extras-g1
+   git worktree prune
+   git remote prune origin
+   git worktree list
+   ```
+
+   `git branch -d` will refuse. Read the next section for why, and use `git branch -D` once you have confirmed the pull request is merged.
+
+9. **Archive the change and tag.** Run the archive command from act 4. On the demo run it synced both new capabilities into `openspec/specs/` as `link-export` and `link-preview`, moved the change into `openspec/changes/archive/`, and the commit and push passed the gates.
+
+   ```bash
+   git tag act-6
+   ```
+
+</Steps>
+
+## What you see
+
+Both pull requests are merged, both tickets are closed and the main checkout has one worktree left, itself. This is the final `git log --oneline -6` on `main`:
+
+```text
+5ab7f63 Archive link-extras: both groups merged, so its specs become the main specs for link-export and link-preview
+074f9bd Add CSV export of all links at /api/links.csv (#2)
+c459268 Add a link preview page at /<code>+ so people can check a link without adding a click (#1)
+6880098 Plan link-extras: CSV export and link preview as two disjoint task groups
+dc95f8e Use the current gitleaks pre-commit syntax; protect is deprecated
+86ca4ca Isolate every ticket in its own worktree so parallel agents never share a folder
+```
+
+Five things in the run are worth your attention.
+
+- **The planned conflict landed somewhere else.** `design.md` named `src/app.ts` as the one shared line. It was not the conflict. Git merged `src/app.ts` and `tasks.md` on its own, and the rebase left both imports and both mounts, with the preview mount before the redirect. The real conflict was in `src/app.test.ts`: both pull requests appended a new test at the end of the file, and git cannot tell which side comes first. The resolution was to keep both sets of tests and split the closing line so each test closes properly. The plan named the right class of risk and the wrong file. The lesson: put shared test additions in separate files too, the way the plan already did for the browser tests. A file that two tickets append to is a conflict waiting for you.
+- **Both pushes passed the gate first time, and the port clash did not happen.** You might expect two agents to fight over a port. Here is why they did not. Each pre-push gate starts the app inside its own clean export of the commit, on the default port 4390. The `E2E_PORT` values 4391 and 4392 only apply to the interactive `npm run e2e` runs each agent did in its own worktree. So two pushes that overlap in time could still clash on 4390. If a push fails on a port, wait and push again.
+- **The CSV implementer took a shortcut and said so.** Its report says it wrote the tests and the implementation in one pass, then proved the red state afterwards by removing the implementation and seeing 2 failures, instead of watching the tests fail before writing any code. That is the kind of shortcut a reviewer has to catch, because the final result looks identical. The tests did pass, and they were not shown to fail for the right reasons before the code existed. Act 8 adds an adversarial reviewer on a second model, and this is the kind of thing it is there to catch.
+- **`git branch -d` refused.** After a squash merge, git does not see the branch's commits in `main`, because the squash made a new commit. So it says the branch is "not fully merged". That is normal. Once you have confirmed the pull request is merged, `git branch -D` is the correct command.
+- **The board did its part.** `close-merged` closed two tickets from the merged pull requests, which is what the pull request links from step 4 were for.
+
+## What you take into act 7
+
+You can now run two agents at once. Each has its own worktree, branch, ticket and pull request, the gates run in all of them, and the board sees them all. What the pull requests do not yet have is proof. A reviewer reads a diff and a list of checks, and takes the agent's word for what they show. Act 7 puts before and after evidence in every pull request, so a fix shows the bug and then shows it gone.
