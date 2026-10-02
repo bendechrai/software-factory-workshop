@@ -203,4 +203,7 @@ from whatever it was.
 - Never let the implementer review its own work, or a reviewer run on the
   implementer's model.
 - Never go past 3 review rounds. Block the ticket for a human instead.
+- Never push to main yourself while a PR of the change is open. Each push
+  puts every open PR behind main and costs it a rebase, new evidence and a
+  fresh verify. Hold tooling and skill fixes until the last merge.
 - Never use `--no-verify`.
