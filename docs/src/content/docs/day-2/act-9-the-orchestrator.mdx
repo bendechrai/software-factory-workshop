@@ -1,0 +1,184 @@
+---
+title: "Act 9: the orchestrator"
+description: One session reads the board, dispatches a subagent per ticket on the model that fits, checks every report, sends each PR to a reviewer on a different model, merges what passes and loops until the board is empty. It judges. It writes no product code.
+sidebar:
+  order: 9
+  label: "Act 9: the orchestrator"
+---
+
+import { Steps, Code, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import orchestrateSkill from '../../../../../templates/act-9/.agents/skills/orchestrate/SKILL.md?raw';
+import implementer from '../../../../../templates/act-9/.claude/agents/implementer.md?raw';
+
+**The idea.** One session becomes the orchestrator. It reads the board and dispatches one subagent per ticket, on the model that fits the work. It checks every report itself. It sends each PR to a reviewer on a different model, merges what passes, and loops until the board is empty. It judges. It writes no product code. This is waterfall for the spec and agile for the doing. The human owns the spec: the proposal, the design and the tasks are agreed before the run starts. The orchestrator and its subagents own the doing, in small tickets, with feedback after each one.
+
+**Time:** about 90 minutes. This is the longest act.
+
+## The talk
+
+1. **The line Ben keeps in every AGENTS.md.** This is the author's own prompt. He uses it often, and it sits in every `AGENTS.md` he writes:
+
+   > Remember that all work should be done by subagents using an LLM model appropriate for the work done. You are an orchestrator and communicate with humans. You do not perform grunt work at your hourly rate.
+
+   The evidence comes from building this guide. While the orchestrating session did work itself, Fable 5.1 (the strongest and most expensive model) was 68% of all cost across acts 1 to 8, nearly all of it in acts 1 to 5. Partway through the build Ben sent this line. In acts 6 to 8 almost no Fable was used. The work moved to Sonnet and Opus subagents. The cost figures are approximate, because each act window holds everything the session did in that time. They are in the table at the end of this page.
+
+2. **Model routing.** The skill carries this table. The strongest model judges. A cheaper model does the work to a clear spec.
+
+   | Job | Model | Why |
+   |---|---|---|
+   | Orchestrator | the strongest model available | it judges other agents' work |
+   | Implementer | `sonnet` | writes code to a clear spec |
+   | Reviewer | a different model from the implementer: `opus` when the implementer is `sonnet`, or the OpenRouter second opinion | a different model has different blind spots |
+   | Mechanical chores | `haiku`, only for chores with a clear pass or fail | cheap, and the result is checked anyway |
+
+3. **A report is a claim.** An implementer says it is done. The orchestrator does not take its word. Step 6 of the skill is a list of checks it runs itself: `gh pr view`, `gh pr diff --name-only` (every file is in scope), `gh pr diff` (read it), `git log` and `git status` in the worktree, `git merge-base --is-ancestor origin/main origin/<branch>`, and `E2E_PORT=4399 bin/preflight.sh <headRefOid>` on the exact commit. Then it reads the evidence: the short shas, the values and the screenshots, not only the `ok` flags. This run shows why. Two of the seven things that went wrong were caught only because of this step, or missed because it was too shallow.
+
+4. **Parallel only when files do not overlap.** The orchestrator reads `design.md` for the dependency note and the files each group touches. A group that depends on another waits for its merge. Groups with different files run at the same time. Two groups that share a file run one after the other, unless `design.md` names the shared file and says how the second one rebases. In the demo, `src/app.ts` was the shared file and only group 3 was expected to edit it.
+
+5. **The review loop is capped.** At most 3 rounds. After round 3 the ticket is blocked and a human takes over. On a PASS the orchestrator still needs a green preflight on the exact head before anything merges.
+
+6. **Who merges.** The merge is the human's decision. The orchestrator merges only when the human has delegated it and says so on the ticket. The demo had no human at this step, so the orchestrator merged all three PRs on the human's behalf, and wrote that on each ticket.
+
+7. **The cost of a run is measured, not guessed.** The last step of the skill runs the ledger for the run window. Both tables go in the report. You will see the numbers below.
+
+## The files
+
+The orchestrate skill is one file in `.agents/skills/orchestrate/`. Claude Code reads it through the `.claude/skills` link. It is the final version, after the lessons from the demo run were added.
+
+<Code code={orchestrateSkill} lang="md" title=".agents/skills/orchestrate/SKILL.md" />
+
+The implementer agent builds one ticket in its own worktree. It points at the skills you already have from acts 5 to 8 and adds nothing new.
+
+<Code code={implementer} lang="md" title=".claude/agents/implementer.md" />
+
+Each harness has its own agent file. Only Claude Code was run for this workshop. The other three were written from the docs and are marked "Written from the docs, not run". Each one points at the body of the Claude Code file.
+
+<Tabs>
+  <TabItem label="Claude Code">
+    `.claude/agents/implementer.md` with `model: sonnet`. This is the one the demo run used, with the deviation described below.
+  </TabItem>
+  <TabItem label="Codex">
+    `.codex/agents/implementer.toml`. Written from the docs, not run.
+  </TabItem>
+  <TabItem label="Gemini">
+    `.gemini/agents/implementer.md`. Written from the docs, not run.
+  </TabItem>
+  <TabItem label="Cursor">
+    `.cursor/agents/implementer.md`. Written from the docs, not run.
+  </TabItem>
+</Tabs>
+
+## Hands-on
+
+You are the human who owns the spec. Use your `hop` repository from act 8. The change is `link-labels`: optional labels on links, a filter on the home page, and a health endpoint.
+
+<Steps>
+
+1. **Add the two lines to AGENTS.md.** The first is Ben's line, verbatim. The second points at the skill. Both are in `templates/act-9/AGENTS-additions.md` in the workshop repo, under the heading "You are an orchestrator". They are shown here too.
+
+   ```text
+   Remember that all work should be done by subagents using an LLM model appropriate for the work done. You are an orchestrator and communicate with humans. You do not perform grunt work at your hourly rate.
+
+   A whole change is built with the `orchestrate` skill: one orchestrator session dispatches an implementer per ticket, verifies each result, has it reviewed on a different model and merges what passes.
+   ```
+
+2. **Copy the skill and the implementer agent in.** Take `.agents/skills/orchestrate/SKILL.md` and `.claude/agents/implementer.md` from `templates/act-9/`, keeping the paths. For Codex, Gemini or Cursor use the matching agent file from the tabs above. Commit them. If you added an agent file while a session was open, restart the session. New agent files load only at session start.
+
+3. **Propose `link-labels`, and stop at the spec.** Use the `openspec-propose` flow to write the proposal, the spec deltas, `design.md` and `tasks.md`, and run `openspec validate link-labels --strict`. Ask for three task groups:
+
+   - **Group 1, labels in the data.** A migration for a nullable `label` column, the `Link` type and row mapping, a `validate-label` action (1 to 40 letters, digits, spaces and hyphens), `createLink`, and the route.
+   - **Group 2, labels on the home page.** A label field on the form, a tag in each row, a "Filter by label" box that keeps working after the five-second refresh, and a new `e2e/labels.spec.ts`.
+   - **Group 3, health endpoint.** A `get-health` action, a `GET /health` route, and `health` added to the reserved codes.
+
+   Check that `design.md` has a dependency table with these rules, because the orchestrator plans from it:
+
+   | Rule | Value in the demo |
+   |---|---|
+   | Group 2 depends on group 1 being merged | yes |
+   | Groups 1 and 3 can run in parallel | yes |
+   | Files each group may touch | listed per group |
+   | Shared file and how the second one rebases | `src/app.ts`, only group 3 expected to edit it |
+   | Evidence folder per group | `evidence/link-labels/g<n>/`, so two branches never write the same `steps.json` |
+
+   The demo also put group 3's HTTP test in a new file, `src/app-health.test.ts`, so group 3 never edits `src/app.test.ts`, which group 1 edits. This is you doing the waterfall part. A vague spec here becomes a vague run.
+
+4. **Import the tickets.** `agentboard import-change link-labels --as orch` creates one ticket per task group. You should have three.
+
+5. **Start the orchestrator with one prompt.** In a fresh session on the strongest model you have:
+
+   ```text
+   You are the orchestrator. Follow the orchestrate skill for the change link-labels.
+   ```
+
+   Run `agentboard serve` and open it in a browser beside the session. Watch tickets move, PR links appear and comments land. Do not type into the session unless it blocks. Note the time the run started, as an ISO time in UTC.
+
+6. **Record the cost.** When the board is empty, run the ledger for the run window, from the workshop repository. Use your own project directory and start time:
+
+   ```bash
+   node tools/ledger/ledger.mjs --project ~/.claude/projects/<project dir> --since <ISO time the run started> --by agent --no-cache
+   node tools/ledger/ledger.mjs --project ~/.claude/projects/<project dir> --since <ISO time the run started> --by model --no-cache
+   ```
+
+   Add `--openrouter <repo>/.agents/review/openrouter-usage.jsonl` if a second opinion ran.
+
+7. **Tag it.** `git tag act-9`.
+
+</Steps>
+
+## What you see
+
+On the demo run the orchestrator read the board, wrote a plan comment on each ticket, and ran groups 1 and 3 as wave 1, in one message. Group 2 ran in wave 2 after group 1 merged. Every implementer was Sonnet. Every reviewer was Opus. The orchestrator wrote no product code, and nobody used `--no-verify`.
+
+| Dispatch | Model | Result | What the orchestrator verified | Verdict | Send-backs | Merge |
+|---|---|---|---|---|---|---|
+| Group 3, PR #6 (wave 1) | Sonnet | health endpoint, checks green, evidence 2/5 before and 5/5 after | files in scope, full diff read, commits matched the report, clean status, up to date, evidence shas, preflight exit 0 | PASS 4/5, 2 NITs not taken | 0 | `89e32f3` |
+| Group 1, PR #7 (wave 1) | Sonnet | labels in the data, evidence 5/9 before and 9/9 after | 20 files, all on the group 1 list, diff read, preflight exit 0 | PASS 4/5, then PASS 5/5 after the rebase and two NITs taken | 1 (evidence after a rebase) | `f72972b` |
+| Rebase of PR #7 | Haiku | rebase, verify and push all exit 0 | range-diff showed both commits unchanged, but `after.json` named a commit no longer in the PR | not applicable | sent back for new evidence | not applicable |
+| Group 2, PR #8 (wave 2) | Sonnet | labels on the home page, evidence 16/22 before and 22/22 after | files in scope, diff read, screenshots viewed, preflight exit 0 | CHANGES 4/5, CHANGES 3/5, then PASS 4/5 with 2 NITs not taken | 2 | `02ec7ed` |
+
+Then the close-out. `agentboard list --change link-labels` printed nothing, health was clean and no worktrees were left. `openspec archive link-labels --yes` updated the `custom-codes` spec and created the `health-check` and `link-labels` specs. That was commit `3827806`.
+
+### What it cost
+
+**$8.15 API-equivalent** for the whole run, from the ledger with `--no-cache`.
+
+| Model | Cost | What it was |
+|---|---|---|
+| Opus 5.5 | $6.55 | the orchestrator plus the reviews |
+| Sonnet 5.5 | $1.53 | three implementers, including their send-backs |
+| Haiku 4.5 | $0.06 | one rebase chore |
+
+The Opus row mixes two jobs. The orchestrator ran as a subagent of the parent session, so its turns are inside the Opus row with the reviews, and the ledger does not split them. Read the row as "judging", not as "reviewing". No second opinion ran, so OpenRouter was $0.00. The two commands in the hands-on step produce these tables.
+
+Compare it with the guide's own build, where the orchestrating session did the work itself:
+
+<Aside type="note" title="Per-act cost of building this guide">
+- Acts 1 to 8 came to $53.63, API-equivalent and approximate.
+- By model: Fable 5.1 $36.22 (68%), Opus 5.5 $11.88 (22%), Sonnet 5.5 $5.03 (9%), Haiku 4.5 $0.50 (1%).
+- Act 1 was $15.20, nearly all Fable. Acts 2 to 4 were $5.16, $4.58 and $5.25, all Fable. Act 5 was $9.24, with $6.30 of it Fable.
+- Act 6 was $6.21 with $0.09 of Fable. Acts 7 and 8 had none.
+- Each window also holds docs and research done at the same time, so treat the rows as a rough shape, not as the exact price of an act.
+</Aside>
+
+### What went wrong
+
+Seven things, from the orchestrator's own report. Six became a line in the skill or the rubric. That is the factory improving itself: a miss is fixed once, in the file, so the next run does not repeat it.
+
+1. **A rebase left the evidence pointing at a commit that was no longer in the PR.** After PR #6 merged, PR #7 was rebased. The code was unchanged, but `after.json` and the PR body named a commit that had vanished. The orchestrator's verify caught it and sent it back. The skill now says, in step 10, that a rebase rewrites every sha and the evidence must be captured again.
+2. **A send-back told the implementer to claim a ticket assigned to `orch`.** The claim was refused, and the implementer correctly stopped. One dispatch was wasted. The skill now says to hand the ticket back with `agentboard handoff`, in step 8.
+3. **The orchestrator pushed a tooling fix to main while PR #7 was open.** That put the PR behind main again and cost a second rebase and a new evidence capture. The skill now has a Never rule: no pushing to main while a PR of the change is open.
+4. **Verify passed evidence that was wrong.** Every step said `ok`, but the run had dropped a link, and an `expectText` matched a substring ("docs" inside "Docs team"). The reviewer caught it, not the orchestrator. The skill now says to read the actual values and look at the screenshots.
+5. **The orchestrator's own instruction caused a blocking finding.** In round 1 for PR #8 it said "put the tag in the destination cell" without checking that cell's ellipsis rule. The tag was clipped on long URLs. PR #8 then used all 3 review rounds. A rubric lesson on clipped elements was added.
+6. **Board hygiene.** Two implementers claimed their tickets but moved them to `tests` and `implementing` only at the end, so the board did not show work in progress. The orchestrator recorded it on both tickets and fixed the brief for group 2. This one is a fix to the brief, not to the skill.
+7. **Latent issues left for the human, not fixed.**
+   - The NITs not taken. On PR #6, there is no test with an existing `health` row. On PR #8, a 40-character label in wide letters can still overflow, and `.label-tag` is split across two CSS blocks.
+   - The destination column is narrower. The text now ellipsizes at 240px, where it was about 420px before.
+   - The e2e specs share one database while Playwright runs files in parallel workers. `hop.spec`'s top-5 stats test can fail when another spec holds links. That fragility is still there.
+
+### The deviation
+
+The new `implementer` agent type is not loaded until the session restarts. So on the demo run every subagent was a `general-purpose` agent with the model set on each dispatch, and each brief told it to read `.claude/agents/implementer.md`. The result is the same, but the agent file was not used as an agent. Add your agent files first, then restart the session, then start the orchestrator.
+
+## What you take into act 10
+
+You have a factory that runs on its own. You write the spec, and one session builds, proves, reviews and merges it, while you watch the board. You know what a run costs, in measured numbers by model. You also know where it leaks: the orchestrator's own briefs, the rebases, and the evidence that looks green and is not. Every one of those is now a line in a file you own. What it left for you is a short list of NITs, a narrower column and a flaky shared database. Those are the next tickets.
