@@ -47,4 +47,4 @@ cd docs && npm install && npm run dev
 - Every hands-on step was run on the demo app with Claude Code. Then it was walked through literally from clean folders. There were two walkthroughs, and the defects they found are fixed.
 - The Codex, Gemini and Cursor tabs are written from their docs. They were not run.
 - The act 10 loop is tested against a fake harness only.
-- agentboard is installed from npm as `@bendechrai/agentboard`.
+- agentboard is on npm as `@bendechrai/agentboard` (version 0.1.0 at the time of writing), with docs at https://bendechrai.github.io/agentboard/.

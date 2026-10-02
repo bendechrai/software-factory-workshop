@@ -36,7 +36,7 @@ if command -v openspec >/dev/null 2>&1; then ok openspec "$(openspec --version 2
 
 if command -v agentboard >/dev/null 2>&1; then ok agentboard "$(agentboard version 2>/dev/null | head -1)"
 elif npx -y @bendechrai/agentboard@latest version >/dev/null 2>&1; then ok agentboard "npx @bendechrai/agentboard"
-else miss agentboard "see the note on the Before you arrive page"; fi
+else miss agentboard "run: npm install -g @bendechrai/agentboard"; fi
 
 echo
 if [ "$missing" = 0 ]; then echo "All good."; else echo "$missing thing(s) to fix."; fi

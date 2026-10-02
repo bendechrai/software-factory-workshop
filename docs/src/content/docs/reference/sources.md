@@ -39,7 +39,7 @@ This workshop is a synthesis. These are the originals, grouped by act, as they s
 
 ## Tickets (act 5)
 
-- agentboard, an append-only event log as a ticket board for agents. https://github.com/bendechrai/agentboard
+- agentboard, an append-only event log as a ticket board for agents. https://github.com/bendechrai/agentboard. Docs: https://bendechrai.github.io/agentboard/. Package: https://www.npmjs.com/package/@bendechrai/agentboard
 - beads, by Steve Yegge. https://github.com/gastownhall/beads and the agent rules at https://github.com/gastownhall/beads/blob/main/AGENTS.md
 - Claude Code agent teams and their shared task list. https://code.claude.com/docs/en/agent-teams
 

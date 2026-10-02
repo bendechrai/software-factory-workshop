@@ -62,7 +62,7 @@ In this act you play two roles in one session. You are the human reviewer, and y
 
 <Steps>
 
-1. **Install agentboard.** It is published to npm as `@bendechrai/agentboard`. Install it globally, then check it runs:
+1. **Install agentboard.** Install it globally from npm, then check it runs. It needs Node 22.16 or later. The docs are at https://bendechrai.github.io/agentboard/ and the package is at https://www.npmjs.com/package/@bendechrai/agentboard.
 
    ```bash
    npm install -g @bendechrai/agentboard
@@ -70,8 +70,6 @@ In this act you play two roles in one session. You are the human reviewer, and y
    ```
 
    If you would rather not install it, run it with `npx -y @bendechrai/agentboard` in place of `agentboard` in every command below.
-
-   If the npm package is not available to you, there is a from-source fallback: the repository link will be given on the day if you need it. Clone it, then run `npm ci`, `npm run build` and `npm link` inside it, and `cd ../hop` before the next step.
 
 2. **Create the board and install the guidance.** Run both in your `hop` repository (if you are not already in it, `cd` there first).
 
@@ -104,10 +102,10 @@ In this act you play two roles in one session. You are the human reviewer, and y
 3. **Optional: give the agent the board as tools.** The agent can use the shell commands as they are. An MCP server gives it the same commands as tools. For Claude Code, this writes `.mcp.json`:
 
    ```bash
-   agentboard agents install --mcp-command agentboard
+   agentboard agents install --target mcp-json
    ```
 
-   `--mcp-command` runs your linked `agentboard` with the argument `mcp`. Without it, `.mcp.json` runs `npx -y @bendechrai/agentboard mcp`. For the other harnesses, register the server `agentboard mcp` yourself.
+   This writes a `.mcp.json` entry that runs `npx -y @bendechrai/agentboard mcp`, so it works whether or not agentboard is installed globally. If you installed it globally and want the entry to run that copy, add `--mcp-command agentboard`. For the other harnesses, register the server `agentboard mcp` yourself.
 
    <Tabs syncKey="harness">
      <TabItem label="Claude Code">
