@@ -1,0 +1,37 @@
+---
+title: Build your own software factory
+description: A two-day, hands-on workshop that takes you from vibe coding to an autonomous orchestrator around your coding harness.
+template: splash
+hero:
+  tagline: Two days. One small app. By the end, an orchestrator that builds, proves, reviews and ships work through your own coding harness while you watch the board.
+  actions:
+    - text: Start with the agenda
+      link: /software-factory-workshop/start/agenda/
+      icon: right-arrow
+    - text: What a factory is
+      link: /software-factory-workshop/start/what-a-factory-is/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## How the workshop works
+
+Every act has the same shape. A short talk on one idea. A hands-on step where you add that one idea to the app you are building. A look at what changed, so you can see the improvement before moving on.
+
+You start in a sandboxed copy of your own harness with no skills, no plugins and no MCP servers, so everyone begins from the same place. You give it one loose prompt and get a wildly different app from the person next to you. Then, act by act, you add the pieces that turn a prompt into a factory.
+
+<CardGrid stagger>
+	<Card title="Day 1: from prompt to pipeline" icon="rocket">
+		The sandbox and the vibe. Guardrails. Gates. Specifications. By the end of the day one agent builds one feature at a time, the way you want it built, and cannot commit work that fails the checks.
+	</Card>
+	<Card title="Day 2: from pipeline to factory" icon="setting">
+		Tickets. Isolation. Proof. Review. The orchestrator. Unattended runs. By the end of the day an orchestrator dispatches subagents per ticket, verifies each one, and loops until the board is empty.
+	</Card>
+	<Card title="Harness and model agnostic" icon="puzzle">
+		The worked path uses Claude Code. Every harness-specific step has tabs for Codex CLI, Gemini CLI and Cursor. The ideas do not depend on any of them.
+	</Card>
+	<Card title="Proven before it was written" icon="approve-check">
+		Every hands-on step in this guide was run, in order, on the demo app before it was written down. The demo repository has a git tag per act so you can catch up at any point.
+	</Card>
+</CardGrid>

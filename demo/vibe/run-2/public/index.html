@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>hop - short links</title>
+  <style>
+    :root { --bg: #f6f5f1; --card: #fff; --ink: #1d1d1f; --muted: #6b6b70; --accent: #2f6b4f; --line: #e3e1da; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+    main { max-width: 860px; margin: 0 auto; padding: 48px 16px; }
+    h1 { font-size: 2.4rem; margin: 0; letter-spacing: -0.03em; }
+    h1 span { color: var(--accent); }
+    .tag { color: var(--muted); margin: 4px 0 28px; }
+    form { display: flex; gap: 8px; }
+    input[type=url], input[type=text] { flex: 1; padding: 14px 16px; font-size: 1rem; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+    button { padding: 0 22px; font-size: 1rem; border: 0; border-radius: 10px; background: var(--accent); color: #fff; cursor: pointer; }
+    button:hover { filter: brightness(1.1); }
+    .msg { min-height: 1.6em; margin: 12px 0 0; }
+    .msg.error { color: #b3261e; }
+    .msg a { color: var(--accent); font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin-top: 28px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: #fbfaf7; }
+    tr:last-child td { border-bottom: 0; }
+    td.long { word-break: break-all; color: var(--muted); max-width: 380px; }
+    td.clicks { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+    th.clicks { text-align: right; }
+    td a { color: var(--accent); }
+    .copy { padding: 4px 10px; font-size: 0.8rem; margin-left: 8px; background: #e8efe9; color: var(--accent); }
+    .empty { color: var(--muted); text-align: center; padding: 28px; }
+    @media (max-width: 600px) { form { flex-direction: column; } button { padding: 12px; } td.long { max-width: 160px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>hop<span>.</span></h1>
+    <p class="tag">Paste a long URL, get a short link.</p>
+    <form id="form">
+      <input id="url" type="text" placeholder="https://example.com/a/very/long/url" autocomplete="off" required>
+      <button type="submit">Shorten</button>
+    </form>
+    <p id="msg" class="msg"></p>
+    <table>
+      <thead><tr><th>Short link</th><th>Destination</th><th class="clicks">Clicks</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="3" class="empty">Loading...</td></tr></tbody>
+    </table>
+  </main>
+  <script>
+    const form = document.getElementById("form");
+    const input = document.getElementById("url");
+    const msg = document.getElementById("msg");
+    const rows = document.getElementById("rows");
+
+    function el(tag, props = {}, children = []) {
+      const node = Object.assign(document.createElement(tag), props);
+      for (const c of children) node.append(c);
+      return node;
+    }
+
+    function copyButton(text) {
+      const btn = el("button", { type: "button", className: "copy", textContent: "Copy" });
+      btn.addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; } catch { btn.textContent = "Failed"; }
+        setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+      });
+      return btn;
+    }
+
+    async function load() {
+      const res = await fetch("/api/links");
+      const links = await res.json();
+      rows.replaceChildren();
+      if (links.length === 0) {
+        rows.append(el("tr", {}, [el("td", { colSpan: 3, className: "empty", textContent: "No links yet." })]));
+        return;
+      }
+      for (const link of links) {
+        rows.append(el("tr", {}, [
+          el("td", {}, [el("a", { href: link.shortUrl, target: "_blank", rel: "noopener", textContent: link.shortUrl }), copyButton(link.shortUrl)]),
+          el("td", { className: "long", textContent: link.url, title: link.url }),
+          el("td", { className: "clicks", textContent: String(link.clicks) }),
+        ]));
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.className = "msg";
+      msg.textContent = "";
+      const res = await fetch("/api/links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: input.value }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        msg.className = "msg error";
+        msg.textContent = body.error || "Something went wrong";
+        return;
+      }
+      input.value = "";
+      msg.replaceChildren("Your short link: ", el("a", { href: body.shortUrl, target: "_blank", rel: "noopener", textContent: body.shortUrl }), copyButton(body.shortUrl));
+      load();
+    });
+
+    window.addEventListener("focus", load);
+    load();
+  </script>
+</body>
+</html>

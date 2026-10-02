@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hop</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main>
+  <h1>hop</h1>
+  <p class="sub">Paste a long URL. Get a short one.</p>
+  <form id="form">
+    <input id="url" type="url" placeholder="https://example.com/a/very/long/link" required autofocus>
+    <button>Shorten</button>
+  </form>
+  <p id="error" role="alert"></p>
+  <table>
+    <thead><tr><th>Short link</th><th>Destination</th><th class="n">Clicks</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <p id="empty">No links yet.</p>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>

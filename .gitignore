@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+dist/
+.astro/
+.env
+.env.local
+# the demo app is a git repository of its own, pulled in as a submodule
+demo/vibe/*/node_modules/
+demo/vibe/*/.next/
+demo/vibe/*/*.db
+demo/vibe/*/*.sqlite

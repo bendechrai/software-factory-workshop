@@ -1,0 +1,15 @@
+body { font: 16px system-ui, sans-serif; background: #f6f5f1; color: #1c1c1c; margin: 0; }
+main { max-width: 860px; margin: 0 auto; padding: 56px 24px; }
+h1 { font-size: 48px; margin: 0; letter-spacing: -2px; }
+.sub { color: #666; margin: 4px 0 28px; }
+form { display: flex; gap: 8px; }
+input { flex: 1; padding: 12px 14px; font-size: 16px; border: 1px solid #bbb; border-radius: 8px; }
+button { padding: 12px 22px; font-size: 16px; background: #1c1c1c; color: #fff; border: 0; border-radius: 8px; cursor: pointer; }
+#error { color: #b00020; min-height: 1.2em; }
+table { width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; border-radius: 8px; }
+th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #eee; }
+th { font-size: 12px; text-transform: uppercase; color: #777; }
+.n { text-align: right; font-variant-numeric: tabular-nums; width: 70px; }
+.dest { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+a { color: #0b57d0; }
+#empty { color: #888; }

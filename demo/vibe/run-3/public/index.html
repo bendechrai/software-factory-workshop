@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>hop</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <h1><span class="mark">hop</span></h1>
+      <p class="tagline">Paste a long URL. Get a short link. See every click.</p>
+    </header>
+
+    <form id="shorten" class="shorten" autocomplete="off">
+      <label class="sr-only" for="url">Long URL</label>
+      <input id="url" name="url" type="text" placeholder="https://example.com/some/very/long/path?with=params" required>
+      <button type="submit">Shorten</button>
+    </form>
+    <p id="message" class="message" role="status" aria-live="polite"></p>
+
+    <section id="result" class="result" hidden>
+      <span class="label">Your short link</span>
+      <div class="result-row">
+        <a id="result-link" href="#" target="_blank" rel="noopener"></a>
+        <button id="copy" type="button" class="ghost">Copy</button>
+      </div>
+    </section>
+
+    <section class="links">
+      <div class="links-head">
+        <h2>Links</h2>
+        <span id="count" class="count"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Short</th>
+            <th>Destination</th>
+            <th class="num">Clicks</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr class="empty"><td colspan="3">No links yet. Shorten one above.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+/* Keep the default Starlight look; only widen the content column a little
+   so command blocks and the harness tabs fit without wrapping. */
+:root {
+	--sl-content-width: 50rem;
+}
