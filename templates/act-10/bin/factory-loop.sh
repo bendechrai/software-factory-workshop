@@ -5,7 +5,10 @@
 #
 # The harness command is HARNESS_CMD; the prompt is appended as its last argument.
 # Equivalents for other harnesses (see research/harnesses-2026-10-01.md):
-#   Claude Code: claude -p --permission-mode acceptEdits --output-format json --max-budget-usd 5
+#   Claude Code: claude -p --allowedTools Bash(git:*),Bash(gh:*),Bash(agentboard:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(openspec:*),Read,Edit,Write,Glob,Grep --permission-mode acceptEdits --output-format json --max-budget-usd 5
+#                (--allowedTools is variadic, so it comes before the flags that take one value;
+#                 the prompt is appended last. The list has no spaces because this command is split on spaces.
+#                 This permission set is untested in a real loop.)
 #   Codex:       codex exec --sandbox workspace-write --json
 #   Gemini:      gemini --approval-mode auto_edit -o json -p      (prompt follows -p)
 #   Cursor:      agent -p --force --output-format json
@@ -26,8 +29,8 @@ MAX_ITERATIONS=${MAX_ITERATIONS:-5}
 MAX_MINUTES=${MAX_MINUTES:-120}
 SLEEP_SECONDS=${SLEEP_SECONDS:-30}
 MAX_FAILURES=${MAX_FAILURES:-3}
-HARNESS_CMD=${HARNESS_CMD:-"claude -p --permission-mode acceptEdits --output-format json --max-budget-usd ${RUN_BUDGET_USD:-5}"}
-WORKSHOP_DIR=${WORKSHOP_DIR:-"$ROOT/../.."}
+HARNESS_CMD=${HARNESS_CMD:-"claude -p --allowedTools Bash(git:*),Bash(gh:*),Bash(agentboard:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(openspec:*),Read,Edit,Write,Glob,Grep --permission-mode acceptEdits --output-format json --max-budget-usd ${RUN_BUDGET_USD:-5}"}
+WORKSHOP_DIR=${WORKSHOP_DIR:-"$ROOT/../software-factory-workshop"}
 
 usage() {
   cat <<USAGE
@@ -37,13 +40,15 @@ Runs the orchestrator headless, one fresh session per iteration, until a guard s
 
 Environment (defaults):
   HARNESS_CMD     harness command, prompt is appended as the last argument
-                  (claude -p --permission-mode acceptEdits --output-format json --max-budget-usd \$RUN_BUDGET_USD)
+                  (claude -p --allowedTools <git, gh, agentboard, npm, npx, node, openspec, file tools>
+                  --permission-mode acceptEdits --output-format json --max-budget-usd \$RUN_BUDGET_USD;
+                  see .agents/loop/README.md for the full list, which is untested in a real loop)
   RUN_BUDGET_USD  budget per run for the default Claude command (5)
   MAX_ITERATIONS  most iterations to run (5)
   MAX_MINUTES     wall-clock limit for the whole loop, decimals allowed (120)
   SLEEP_SECONDS   cool-down between iterations (30)
   MAX_FAILURES    stop after this many failed harness runs in a row (3)
-  WORKSHOP_DIR    workshop checkout, for the cost hint (../.. from the repo)
+  WORKSHOP_DIR    workshop checkout, for the cost hint (../software-factory-workshop from the repo)
 
 Stop it: touch .agents/loop/STOP
 Exit codes: 0 normal end, 1 same ticket blocked twice in a row, 2 failures or bad usage.
@@ -105,8 +110,9 @@ check_guards() {
 }
 
 cost_hint() {
-  say "cost of this loop (run in the workshop):"
-  say "  node $WORKSHOP_DIR/tools/ledger/ledger.mjs --since $START_ISO --by agent"
+  say "cost of this loop (run from the repo; put CLAUDE_CONFIG_DIR=~/.claude-workshop in front if you use the sandbox):"
+  say "  cd $ROOT"
+  say "  node \"$WORKSHOP_DIR/tools/ledger/ledger.mjs\" --since $START_ISO --by agent"
 }
 
 if [ "$DRY_RUN" = 1 ]; then

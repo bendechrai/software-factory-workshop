@@ -25,7 +25,7 @@ import challenger from '../../../../../templates/act-8/.agents/review/challenger
 6. **Every miss becomes a Lessons line.** When a reviewer, a human or production finds something the rubric missed, one line goes into the rubric's Lessons section, in the PR that fixes it.
 7. **Log what each opinion costs.** The aviation project logs every OpenRouter call with the cost OpenRouter charged. Here the second-opinion script appends one line per call to a usage log, and the ledger can add it to the total.
 
-**Most attendees have one subscription.** So the baseline is an in-harness reviewer on a different model of the same vendor. In Claude Code that is a subagent with `model: sonnet` when the implementer is on opus. The other harnesses have the same idea, in the tabs below. Only Claude Code was run for this workshop. The other three files were written from the docs and are marked "Written from the docs, not run". The OpenRouter second opinion is optional. The presenter shows it, and it is written up below for anyone with a key.
+**Most attendees have one subscription.** So the baseline is an in-harness reviewer on a different model of the same vendor. In Claude Code that is a subagent whose model differs from the implementer's. The rule is "different from the implementer", not a particular model. The demo's act 8 used a Sonnet reviewer against an Opus implementer, which was correct then. From act 9 the implementers are Sonnet, so the reviewer file ships as `model: opus`. The other harnesses have the same idea, in the tabs below. Only Claude Code was run for this workshop. The other three files were written from the docs and are marked "Written from the docs, not run". The OpenRouter second opinion is optional. The presenter shows it, and it is written up below for anyone with a key.
 
 ## The files
 
@@ -45,7 +45,7 @@ Each harness wires the reviewer in its own way. Pick a model that differs from t
 
 <Tabs>
   <TabItem label="Claude Code">
-    `.claude/agents/reviewer.md` with `model: sonnet` in its frontmatter. Run when the implementer is on opus. This is the one the demo run used.
+    `.claude/agents/reviewer.md` with `model: opus` in its frontmatter, and a comment saying it must differ from the implementer's model. The act 8 demo run used `sonnet` here, because its implementer was on Opus. Once the implementers are Sonnet (act 9), the reviewer must be Opus, so the template ships `opus`. If your implementer session runs on Opus, change the line to `sonnet`.
   </TabItem>
   <TabItem label="Codex">
     `.codex/agents/reviewer.toml` with a `model` that differs from the implementer's. The template names `gpt-5.5-codex`. Written from the docs, not run.
@@ -105,28 +105,41 @@ To use it:
 3. Review a PR, then challenge it. The challenge reads the review as a claim to test.
 
    ```bash
-   node bin/second-opinion.mjs --pr 5 --out /tmp/pr5-review.md
-   node bin/second-opinion.mjs --pr 5 --role challenge --against /tmp/pr5-review.md --out /tmp/pr5-challenge.md
+   node bin/second-opinion.mjs --pr <n> --out /tmp/pr-review.md
+   node bin/second-opinion.mjs --pr <n> --role challenge --against /tmp/pr-review.md --out /tmp/pr-challenge.md
    ```
 
 4. Read the usage log. Each call appends one line to `.agents/review/openrouter-usage.jsonl`: the model, the prompt and completion tokens, the cost OpenRouter charged, the role and a timestamp. No key is in it.
 5. Feed the log to the ledger, so the opinion costs show up beside the Claude spend. See `tools/ledger/README.md` in the workshop repo.
 
    ```bash
-   node tools/ledger/ledger.mjs --openrouter .agents/review/openrouter-usage.jsonl
+   node ../software-factory-workshop/tools/ledger/ledger.mjs --openrouter .agents/review/openrouter-usage.jsonl
    ```
 
 ## Hands-on
 
-You are the orchestrator. Use your `hop` repository from act 7. The fix PR from act 7 is open, and it is the real PR to review. It was PR #3 on the demo run.
+You are the orchestrator. Use your `hop` repository from act 7. The fix PR from act 7 is open, and it is the real PR to review. It was PR #3 on the demo run. Your pull request numbers will differ, so the commands below use `<n>`.
 
 <Steps>
 
-1. **Copy the templates in.** Take everything under `templates/act-8/` from the workshop repo, keeping the paths, and add the `AGENTS.md` line above. The usage log, `.agents/review/openrouter-usage.jsonl`, is not a template. The first second-opinion run creates it. Run `npx eslint bin/second-opinion.mjs` and `node bin/second-opinion.mjs --help` to check the tool. Commit and push. On the demo run the pre-commit hook and the pre-push gate both passed.
+1. **Copy the templates in.** From your `hop` folder, copy everything under `templates/act-8/` from the workshop clone, keeping the paths, and add the `AGENTS.md` line above.
 
-2. **Plant a calibration defect.** Branch from the fix PR's branch and add two changes the rubric covers and the tests cannot see. Both keep every test green. On the demo run this was PR #5, branch `fix/reserved-codes-g1-cal`, one commit titled "Make the reserved code refusal explicit at the API edge".
+   ```bash
+   cp -R ../software-factory-workshop/templates/act-8/. .
+   ```
 
-   A layering violation, rubric check 6, in `src/routes/links.ts`. A new import, and a check in the POST handler just before `createLink`. The status and message match what the action already returns, so behaviour looks unchanged.
+   That also drops in the files for every harness. Delete the folders for harnesses you do not use: `.codex` if you do not use Codex, `.gemini/agents` if you do not use Gemini CLI, `.cursor` if you do not use Cursor. Keep `.claude/agents`, which the Claude Code steps below use.
+
+    The usage log, `.agents/review/openrouter-usage.jsonl`, is not a template. The first second-opinion run creates it. Run `npx eslint bin/second-opinion.mjs` and `node bin/second-opinion.mjs --help` to check the tool. Commit and push. On the demo run the pre-commit hook and the pre-push gate both passed.
+
+2. **Plant a calibration defect.** Branch from the fix PR's branch and add two changes the rubric covers and the tests cannot see. Both must keep every test green. Open the PR and do not merge it. Your app differs from the demo, so describe the shape of each defect to your agent and let it find a place for it in your code.
+
+   - **A layering violation, rubric check 6.** Copy one business rule from an action into a route handler, so the rule is now checked in two layers. The status and message match what the action already returns, so behaviour looks unchanged.
+   - **Dead code, rubric check 7.** Add an exported helper that nothing calls.
+
+   `npm run verify`, `npm run e2e` and the push gate should all pass. That is the point: the tests cannot see these two defects.
+
+   In the demo this was PR #5, branch `fix/reserved-codes-g1-cal`, one commit titled "Make the reserved code refusal explicit at the API edge". The layering violation was a new import and a check in the POST handler in `src/routes/links.ts`, just before `createLink`:
 
    ```ts
    import { RESERVED_CODES } from "../actions/reserved-codes.ts";
@@ -138,7 +151,7 @@ You are the orchestrator. Use your `hop` repository from act 7. The fix PR from 
    }
    ```
 
-   Dead code, rubric check 7, appended to `src/actions/reserved-codes.ts`. An exported helper that nothing calls.
+   And the dead code was an exported helper appended to `src/actions/reserved-codes.ts`:
 
    ```ts
    export function isReservedCode(code: string): boolean {
@@ -146,9 +159,7 @@ You are the orchestrator. Use your `hop` repository from act 7. The fix PR from 
    }
    ```
 
-   `npm run verify`, `npm run e2e` and the push gate all passed on the demo run. That is the point: the tests cannot see these two defects. Open the PR and do not merge it.
-
-3. **Run the in-harness reviewer on both PRs.** In Claude Code, start the `reviewer` agent, on Sonnet, with each PR number and the change name. Run each review on its own. The reviewer reads the PR, runs the tests in a throwaway worktree, writes the review and posts it with `gh pr review <n> --comment --body-file <file>`. It then comments the verdict on the board ticket.
+3. **Run the in-harness reviewer on both PRs.** In Claude Code, start the `reviewer` agent, which runs on the model in its file (Opus, as shipped; the demo run used Sonnet because its implementer was on Opus), with each PR number and the change name. Restart your harness session first, because agent files added during a session are not loaded until it restarts. Run each review on its own. The reviewer reads the PR, runs the tests in a throwaway worktree, writes the review and posts it with `gh pr review <n> --comment --body-file <file>`. It then comments the verdict on the board ticket.
 
    ```bash
    agentboard comment <ticket id> "Review of PR #<n>: VERDICT: <verdict>, SCORE: <n>/5, <k> blocking" --as reviewer
@@ -161,10 +172,10 @@ You are the orchestrator. Use your `hop` repository from act 7. The fix PR from 
 6. **Close the planted PR.** It did its job. Close it without merging, with a comment that says why, then remove its branch and worktree. On the demo run the comment said it was a calibration PR with two planted defects.
 
    ```bash
-   gh pr close 5 --comment "<why>"
+   gh pr close <n> --comment "<why>"
    ```
 
-7. **Record the lesson.** This is the teaching moment of the step. On the demo run the Claude reviewer and the GPT reviewer both caught the two planted defects, but neither noticed that the duplicate route guard changes which error wins on mixed bad input. Only the challenger did. A miss by two lenses, caught by a third, becomes a permanent line that every future review reads. This line went into the rubric's Lessons section:
+7. **Record the lesson.** This is the teaching moment of the step. On the demo run the Claude reviewer and the GPT reviewer both caught the two planted defects, but neither noticed that the duplicate route guard changes which error wins on mixed bad input. Only the challenger did. A miss by two lenses, caught by a third, becomes a permanent line that every future review reads. The act 8 rubric template has only the first lesson, so this one is yours to add. Add this line to the rubric's Lessons section yourself (or a line of your own for whatever your reviewers missed):
 
    ```text
    - When the same rule is checked in two layers (for example a route and an action), ask which error wins on mixed bad input (an invalid URL plus a reserved code), and whether the tests would still pass if the authoritative check were deleted.
@@ -190,6 +201,8 @@ You are the orchestrator. Use your `hop` repository from act 7. The fix PR from 
    ```bash
    git tag act-8
    ```
+
+   If you cloned the demo to catch up, the tag already exists; use `git tag -f act-8`.
 
 </Steps>
 
@@ -228,7 +241,7 @@ The first calibration attempt used Haiku to plant the defect. It could not find 
 - Main session $2.99, subagents $2.98 (50% subagents).
 - The window also holds docs and research work done at the same time, so treat it as approximate.
 
-The reviewer ran on Sonnet. The small Haiku line is the failed calibration attempt described above. Run the ledger now and compare your own number.
+In the demo run the reviewer ran on Sonnet, against an Opus implementer. The small Haiku line is the failed calibration attempt described above. Run the ledger now and compare your own number.
 </Aside>
 
 ## What you take into act 9

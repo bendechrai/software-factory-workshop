@@ -2,7 +2,8 @@
 name: reviewer
 description: Reviews one pull request against its OpenSpec change and the review rubric, with no memory of writing it. Use after a PR is opened, with the PR number and change name.
 tools: Read, Grep, Glob, Bash
-model: sonnet
+# Must differ from the implementer's model. Implementers are sonnet from act 9, so this is opus.
+model: opus
 ---
 
 Read `.agents/review/reviewer.md` and follow it exactly. It names your

@@ -55,7 +55,7 @@ Each harness has its own agent file. Only Claude Code was run for this workshop.
 
 <Tabs>
   <TabItem label="Claude Code">
-    `.claude/agents/implementer.md` with `model: sonnet`. This is the one the demo run used, with the deviation described below.
+    `.claude/agents/implementer.md` with `model: sonnet`. This is the one the demo run used, with the deviation described below. The reviewer you added in act 8 is `model: opus`, so the two differ, as the rule needs.
   </TabItem>
   <TabItem label="Codex">
     `.codex/agents/implementer.toml`. Written from the docs, not run.
@@ -82,13 +82,25 @@ You are the human who owns the spec. Use your `hop` repository from act 8. The c
    A whole change is built with the `orchestrate` skill: one orchestrator session dispatches an implementer per ticket, verifies each result, has it reviewed on a different model and merges what passes.
    ```
 
-2. **Copy the skill and the implementer agent in.** Take `.agents/skills/orchestrate/SKILL.md` and `.claude/agents/implementer.md` from `templates/act-9/`, keeping the paths. For Codex, Gemini or Cursor use the matching agent file from the tabs above. Commit them. If you added an agent file while a session was open, restart the session. New agent files load only at session start.
+2. **Copy the skill, the implementer agent and the rubric in.** From your `hop` folder, with the workshop clone beside it:
+
+   ```bash
+   t=../software-factory-workshop/templates/act-9
+   mkdir -p .agents/skills/orchestrate .agents/review .claude/agents
+   cp "$t/.agents/skills/orchestrate/SKILL.md" .agents/skills/orchestrate/SKILL.md
+   cp "$t/.claude/agents/implementer.md" .claude/agents/implementer.md
+   cp "$t/.agents/review/rubric.md" .agents/review/rubric.md
+   ```
+
+   For Codex, Gemini or Cursor, copy the matching agent file too, from `$t/.codex/agents/implementer.toml`, `$t/.gemini/agents/implementer.md` or `$t/.cursor/agents/implementer.md`, into the same path in your repo. `AGENTS-additions.md` holds the two lines from step 1, so you do not need to copy it.
+
+   The rubric in `templates/act-9/` has one more Lessons line than act 8's: the one about elements clipped inside a cell with overflow hidden. If you customised your own rubric, do not overwrite it. Merge the Lessons lines by hand instead, and copy just that one line. Commit everything. If you added an agent file while a session was open, restart the session. New agent files load only at session start.
 
 3. **Propose `link-labels`, and stop at the spec.** Use the `openspec-propose` flow to write the proposal, the spec deltas, `design.md` and `tasks.md`, and run `openspec validate link-labels --strict`. Ask for three task groups:
 
    - **Group 1, labels in the data.** A migration for a nullable `label` column, the `Link` type and row mapping, a `validate-label` action (1 to 40 letters, digits, spaces and hyphens), `createLink`, and the route.
    - **Group 2, labels on the home page.** A label field on the form, a tag in each row, a "Filter by label" box that keeps working after the five-second refresh, and a new `e2e/labels.spec.ts`.
-   - **Group 3, health endpoint.** A `get-health` action, a `GET /health` route, and `health` added to the reserved codes.
+   - **Group 3, health endpoint.** A `get-health` action, a `GET /health` route, and `health` added to the reserved codes. This assumes act 7's list of reserved codes exists. If yours is shaped differently or named something else, adapt this group to your list.
 
    Check that `design.md` has a dependency table with these rules, because the orchestrator plans from it:
 
@@ -112,16 +124,16 @@ You are the human who owns the spec. Use your `hop` repository from act 8. The c
 
    Run `agentboard serve` and open it in a browser beside the session. Watch tickets move, PR links appear and comments land. Do not type into the session unless it blocks. Note the time the run started, as an ISO time in UTC.
 
-6. **Record the cost.** When the board is empty, run the ledger for the run window, from the workshop repository. Use your own project directory and start time:
+6. **Record the cost.** When the board is empty, run the ledger for the run window. Run it from your `hop` folder (for example `~/workshop/hop`); the ledger finds the project from the current folder. Use your own start time:
 
    ```bash
-   node tools/ledger/ledger.mjs --project ~/.claude/projects/<project dir> --since <ISO time the run started> --by agent --no-cache
-   node tools/ledger/ledger.mjs --project ~/.claude/projects/<project dir> --since <ISO time the run started> --by model --no-cache
+   node ../software-factory-workshop/tools/ledger/ledger.mjs --since <ISO time the run started> --by agent
+   node ../software-factory-workshop/tools/ledger/ledger.mjs --since <ISO time the run started> --by model
    ```
 
-   Add `--openrouter <repo>/.agents/review/openrouter-usage.jsonl` if a second opinion ran.
+   If you use the sandbox, put `CLAUDE_CONFIG_DIR=~/.claude-workshop` in front of each command, because its transcripts are under `~/.claude-workshop/projects`, not `~/.claude/projects`. Add `--no-cache` only when you want a cold recount. Add `--openrouter .agents/review/openrouter-usage.jsonl` if a second opinion ran.
 
-7. **Tag it.** `git tag act-9`.
+7. **Tag it.** `git tag act-9`. If you cloned the demo to catch up, the tag already exists; use `git tag -f act-9`.
 
 </Steps>
 

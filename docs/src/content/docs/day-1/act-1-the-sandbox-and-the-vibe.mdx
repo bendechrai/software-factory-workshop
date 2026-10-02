@@ -109,6 +109,20 @@ Three things to say before anyone types.
    git tag act-1
    ```
 
+7. **Put it on GitHub.** Acts 6 to 10 open pull requests, so the repository needs a home on GitHub. A private repository is fine. Check that your branch is called `main`, then create the repository and push in one command.
+
+   ```bash
+   git branch --show-current
+   gh repo create hop --private --source . --push
+   ```
+
+   The first command must print `main`. If it prints something else, rename the branch first with `git branch -m main`. If you cloned `hop-demo` to catch up instead of building your own, rename its remote before you create your own repository, so the demo stays reachable as `upstream`:
+
+   ```bash
+   git remote rename origin upstream
+   gh repo create hop --private --source . --push
+   ```
+
 </Steps>
 
 ## What you see

@@ -71,6 +71,8 @@ Use your `hop` repository from act 9.
    bin/factory-loop.sh --dry-run
    ```
 
+   If the board has no open tickets yet, the dry run reports an empty board. That is expected here, because you import tickets in step 5.
+
 4. **Test the guards against the fake harness.** No model is called, so this costs nothing.
 
    ```bash
@@ -83,6 +85,8 @@ Use your `hop` repository from act 9.
 
    <Aside type="caution" title="Read this before the next step">
    When this guide was built, the loop and every guard were tested only against the fake harness. The loop has not yet been run against a real harness from start to finish. The presenter runs it live. The `HARNESS_CMD` lines below for all four harnesses were written from their docs, not run.
+
+   The default `HARNESS_CMD` also carries an `--allowedTools` list, so a headless session can run the shell commands the orchestrate skill needs (`git`, `gh`, `agentboard`, `npm`, `npx`, `node`, `openspec`) and the file tools. Without it, `acceptEdits` does not approve shell commands, and a headless session would stall on the first one. This permission set is untested in a real loop. Check the first iteration's `.err` and output files in `.agents/loop/runs/` for refused tools.
 
    The reason is simple. The guide was built inside one harness session, and starting a harness inside itself was deliberately avoided. So the next step is the first real run for you and for the presenter. Keep the limits small, watch the first iteration, and keep the stop file in mind.
    </Aside>
@@ -98,9 +102,9 @@ Use your `hop` repository from act 9.
    <Tabs>
      <TabItem label="Claude Code">
        ```bash
-       HARNESS_CMD="claude -p --permission-mode acceptEdits --output-format json --max-budget-usd 5" MAX_ITERATIONS=3 bin/factory-loop.sh
+       HARNESS_CMD="claude -p --allowedTools Bash(git:*),Bash(gh:*),Bash(agentboard:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(openspec:*),Read,Edit,Write,Glob,Grep --permission-mode acceptEdits --output-format json --max-budget-usd 5" MAX_ITERATIONS=3 bin/factory-loop.sh
        ```
-       This is the default. It is the only one with a per-run budget flag.
+       This is the default. It is the only one with a per-run budget flag. The `--allowedTools` list has no spaces, because the loop splits the command on spaces, and it comes before the other flags, because the flag takes a list and would otherwise swallow the prompt. This permission set is untested in a real loop.
      </TabItem>
      <TabItem label="Codex CLI">
        ```bash
@@ -132,13 +136,15 @@ Use your `hop` repository from act 9.
 
    The run in progress finishes, and the loop ends before the next one. Remove the file afterwards: `rm .agents/loop/STOP`. If a run was cut off by Ctrl-c, run `agentboard health` to find tickets left claimed.
 
-8. **Run the ledger for the loop window.** The loop printed the command when it ended. Run it from the workshop repository, with your project directory and the loop's start time:
+8. **Run the ledger for the loop window.** The loop printed the command when it ended. Run it from your `hop` folder (for example `~/workshop/hop`), with the loop's start time. The ledger finds the project from the current folder.
 
    ```bash
-   node tools/ledger/ledger.mjs --project ~/.claude/projects/<project dir> --since <ISO time the loop started> --by agent --no-cache
+   node ../software-factory-workshop/tools/ledger/ledger.mjs --since <ISO time the loop started> --by agent
    ```
 
-9. **Tag it.** `git tag act-10`.
+   With the sandbox, put `CLAUDE_CONFIG_DIR=~/.claude-workshop` in front. Add `--no-cache` only when you want a cold recount.
+
+9. **Tag it.** `git tag act-10`. If you cloned the demo to catch up, the tag already exists; use `git tag -f act-10`.
 
 </Steps>
 
@@ -183,8 +189,9 @@ The last line was `13 passed, 0 failed`. `shellcheck bin/*.sh` also reported not
 - When the loop ends it prints the cost hint:
 
   ```text
-  [factory-loop] cost of this loop (run in the workshop):
-  [factory-loop]   node <workshop>/tools/ledger/ledger.mjs --since <loop start> --by agent
+  [factory-loop] cost of this loop (run from the repo; put CLAUDE_CONFIG_DIR=~/.claude-workshop in front if you use the sandbox):
+  [factory-loop]   cd <your repo>
+  [factory-loop]   node "<workshop>/tools/ledger/ledger.mjs" --since <loop start> --by agent
   ```
 
 All three of `runs/`, `STOP` and `loop.log` are gitignored.

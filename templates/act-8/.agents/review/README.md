@@ -24,8 +24,8 @@ The reviewer must run on a different model from the implementer. Set it in
 the agent file:
 
 - Claude Code: `model:` in `.claude/agents/reviewer.md` (`sonnet`, `opus`,
-  `haiku`, `fable` or a full id). It ships as `sonnet`; if your implementer
-  runs on Sonnet, change it.
+  `haiku`, `fable` or a full id). It ships as `opus`, because implementers
+  are `sonnet` from act 9; if your implementer runs on Opus, change it.
 - Codex: `model = "..."` in `.codex/agents/reviewer.toml`, with the prompt
   in `developer_instructions`.
 - Gemini CLI: `model:` in `.gemini/agents/reviewer.md`.
@@ -60,15 +60,15 @@ that review with `--against <file>`. Both print the same `VERDICT` and
 `SCORE` lines, so the two results compare.
 
 ```
-node bin/second-opinion.mjs --pr 3 --role review --out review.md
-node bin/second-opinion.mjs --pr 3 --role challenge --against review.md --out challenge.md
+node bin/second-opinion.mjs --pr <n> --role review --out review.md
+node bin/second-opinion.mjs --pr <n> --role challenge --against review.md --out challenge.md
 ```
 
 ## Second opinion through OpenRouter (optional)
 
 ```
 export OPENROUTER_API_KEY=...        # never commit it, never put it in a file here
-node bin/second-opinion.mjs --pr 3 [--role review|challenge] [--against review.md] [--model openai/gpt-5.6-sol] [--change reserved-codes] [--out review.md]
+node bin/second-opinion.mjs --pr <n> [--role review|challenge] [--against review.md] [--model openai/gpt-5.6-sol] [--change reserved-codes] [--out review.md]
 ```
 
 It sends `reviewer.md`, the rubric, `AGENTS.md`, `DEFINITION_OF_DONE.md`,
@@ -76,7 +76,7 @@ the PR body, the change's OpenSpec files and `gh pr diff` to one model,
 prints the review and appends tokens, cost and role to `openrouter-usage.jsonl`.
 It posts nothing; paste it into the PR yourself if it earns it. Add the
 cost to the workshop ledger with
-`node tools/ledger/ledger.mjs --openrouter <this repo>/.agents/review/openrouter-usage.jsonl`.
+`node ../software-factory-workshop/tools/ledger/ledger.mjs --openrouter .agents/review/openrouter-usage.jsonl`, run from the repo folder.
 
 ## One subscription is enough
 

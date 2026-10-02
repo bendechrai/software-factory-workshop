@@ -38,7 +38,7 @@ The skill. Agents load it before any ticket, feature or fix. It is eight steps: 
 
 <Code code={skill} lang="md" title=".agents/skills/new-feature/SKILL.md" />
 
-You also add one line to `AGENTS.md`, after the last step of the Workflow list:
+You also add one line to `AGENTS.md`, after the line that starts `4. **Summarise.**`:
 
 ```text
 Every ticket starts with the `new-feature` skill, in its own git worktree and branch, and never on main.
@@ -59,7 +59,14 @@ You are the orchestrator and the reviewer. Two agents are the implementers. Use 
    curl -fsSL "$base/.agents/skills/new-feature/SKILL.md" -o .agents/skills/new-feature/SKILL.md
    ```
 
-   Open `AGENTS.md` and add the line above after the last step of the Workflow list. Commit both and push. On the demo run this was one commit, and the pre-commit hook and the pre-push gate both passed.
+   Add the line above to `AGENTS.md`, directly after the line that starts `4. **Summarise.**` (the last step of the Workflow list, just before `## Conventions`). This command puts it in the right place:
+
+   ```bash
+   awk '{ print } /^4\. \*\*Summarise\.\*\*/ { print "Every ticket starts with the `new-feature` skill, in its own git worktree and branch, and never on main." }' AGENTS.md > AGENTS.md.new && mv AGENTS.md.new AGENTS.md
+   git diff AGENTS.md
+   ```
+
+   Commit both and push. On the demo run this was one commit, and the pre-commit hook and the pre-push gate both passed. This commit goes on `main` deliberately: tooling changes to the factory itself land on main, and product work never does.
 
 2. **Propose a change with two groups that touch different files.** Use the propose command from act 4. Ask for two small, independent features, and ask for exactly two task groups. On the demo run they were a CSV export of all links at `GET /api/links.csv`, and a preview page at `GET /<code>+` that shows a link's details without redirecting and without counting a click. Name the change `link-extras`.
 
@@ -105,14 +112,14 @@ You are the orchestrator and the reviewer. Two agents are the implementers. Use 
    You are impl-2. Work ticket <id of link preview page> following the new-feature skill. Use E2E_PORT=4392.
    ```
 
-   Both agents start in the main checkout and create their own worktree from there. You can also let the harness do that part.
+   Both agents start in the main checkout and create their own worktree from there. You can also let the harness do that part. Each agent runs `npm ci` in its own worktree. If one forgets, its first commit fails in the hook with `tsc: command not found`.
 
    <Tabs syncKey="harness">
      <TabItem label="Claude Code">
        This is what the demo run used: two sessions started in the main checkout, each making its worktree with `git worktree add` as the skill says. To use the native feature instead, start each session with `claude -w feat-link-extras-g1` and `claude -w feat-link-extras-g2`. The folders then live under `.claude/worktrees/` inside the repo, which is not the layout in this act, so add `.claude/worktrees/` to `.gitignore`.
      </TabItem>
      <TabItem label="Codex CLI">
-       Run `git worktree add ../hop.worktrees/feat-link-extras-g1 -b feat/link-extras-g1 origin/main` yourself, then start `codex -C ../hop.worktrees/feat-link-extras-g1`. Do the same for group 2. Written from the docs, not run.
+       Run `git worktree add ../hop.worktrees/feat-link-extras-g1 -b feat/link-extras-g1 --no-track origin/main` yourself, then start `codex -C ../hop.worktrees/feat-link-extras-g1`. Do the same for group 2. Written from the docs, not run.
      </TabItem>
      <TabItem label="Gemini CLI">
        Enable `{"experimental": {"worktrees": true}}` in settings, then start `gemini -w feat-link-extras-g1` and `gemini -w feat-link-extras-g2`. Written from the docs, not run.
@@ -126,12 +133,12 @@ You are the orchestrator and the reviewer. Two agents are the implementers. Use 
 
    1. **Claim.** `agentboard claim 01M3X951MCB8TDV968ZAACA504 --as impl-1` printed `01M3X951MCB8TDV968ZAACA504  todo  impl-1  CSV export`.
    2. **Check scope.** Both ran `git fetch origin` and `gh pr list --state open --json number,headRefName,files`. Both got `[]`, so neither found an overlap.
-   3. **Create the worktree.** `git worktree add ../hop.worktrees/feat-link-extras-g1 -b feat/link-extras-g1 origin/main`, then `npm ci` inside it. The second agent used `feat-link-extras-g2` in the same way. Both confirmed `git config core.hooksPath` printed `.githooks` and the branch was not `main`.
-   4. **Write the tests.** Move the ticket to `tests`, then write them. impl-2 saw its route tests fail first, with a 404 where a 200 was expected. See the next section for impl-1.
-   5. **Implement.** Move to `implementing`. Tick only your own lines in `tasks.md`. `npm run verify` and `E2E_PORT=4391 npm run e2e` (4392 for impl-2) both passed.
+   3. **Create the worktree.** `git worktree add ../hop.worktrees/feat-link-extras-g1 -b feat/link-extras-g1 --no-track origin/main`, then `npm ci` inside it. The second agent used `feat-link-extras-g2` in the same way. Both confirmed `git config core.hooksPath` printed `.githooks` and the branch was not `main`.
+   4. **Write the tests.** Move the ticket to `tests` (`agentboard move <id> tests --as impl-1`), then write them. impl-2 saw its route tests fail first, with a 404 where a 200 was expected. See the next section for impl-1.
+   5. **Implement.** Move to `implementing` (`agentboard move <id> implementing --as impl-1`). Tick only your own lines in `tasks.md`. `npm run verify` and `E2E_PORT=4391 npm run e2e` (4392 for impl-2) both passed.
    6. **Push through the gate.** `git push -u origin feat/link-extras-g1`. The pre-push gate passed on the first attempt for both.
-   7. **Open the pull request.** `gh pr create --base main`, with the checks and their exit codes in the body. impl-2 opened PR #1, and impl-1 opened PR #2.
-   8. **Link it on the board and hand off.** `agentboard link <id> --pr 2 --as impl-1`, then `agentboard handoff <id> --to ben --status review --note "<PR url, what to look at>" --as impl-1`. The ticket printed `review  ben  CSV export`.
+   7. **Open the pull request.** `gh pr create --base main`, with the checks and their exit codes in the body. impl-2 opened PR #1, and impl-1 opened PR #2. Your pull request numbers will differ; the commands below use `<n>` for them.
+   8. **Link it on the board and hand off.** `agentboard link <id> --pr <n> --as impl-1`, then `agentboard handoff <id> --to ben --status review --note "<PR url, what to look at>" --as impl-1`. The ticket printed `review  ben  CSV export`.
 
    Both worktrees stay in place until the merge.
 
@@ -140,10 +147,10 @@ You are the orchestrator and the reviewer. Two agents are the implementers. Use 
 6. **Merge one, rebase the other.** Merge the first with a squash, and delete its branch.
 
    ```bash
-   gh pr merge 1 --squash --delete-branch
+   gh pr merge <n> --squash --delete-branch
    ```
 
-   Now the second pull request is behind `main`. From its worktree, follow the steps in `design.md`.
+   Now the other pull request is behind `main`. From the worktree of the pull request you have not merged yet, follow the steps in `design.md`. In the demo that was `feat-link-extras-g1`, the CSV export.
 
    ```bash
    cd ../hop.worktrees/feat-link-extras-g1
@@ -151,14 +158,25 @@ You are the orchestrator and the reviewer. Two agents are the implementers. Use 
    git rebase origin/main
    ```
 
-   Git stops on a conflict. Resolve it, keep both sides, then run the checks again and carry on.
+   Git stops on a conflict. Expect one in `src/app.ts` if both mount lines sit side by side: both branches added an import line and an `app.use` line at the same spot. Open the file and you will see conflict markers like this:
+
+   ```text
+   <<<<<<< HEAD
+   import { previewRouter } from "./routes/preview.js";
+   =======
+   import { exportRouter } from "./routes/export.js";
+   >>>>>>> (your commit)
+   ```
+
+   Resolve it by keeping both lines and deleting the three marker lines. Do the same for the two `app.use` lines, keeping the preview mount before the redirect. Then run the checks again, mark the file resolved and carry on.
 
    ```bash
    npm run verify
    E2E_PORT=4391 npm run e2e
+   git add src/app.ts
    git rebase --continue
    git push --force-with-lease
-   gh pr merge 2 --squash
+   gh pr merge <n> --squash
    ```
 
    The force push goes through the pre-push gate again. After a squash merge the remote branch may be left behind. If it is, delete it with `git push origin --delete feat/link-extras-g1`.
@@ -197,6 +215,8 @@ You are the orchestrator and the reviewer. Two agents are the implementers. Use 
    git tag act-6
    ```
 
+   If you cloned the demo to catch up, the tag already exists; use `git tag -f act-6`.
+
 </Steps>
 
 ## What you see
@@ -214,7 +234,7 @@ dc95f8e Use the current gitleaks pre-commit syntax; protect is deprecated
 
 Five things in the run are worth your attention.
 
-- **The planned conflict landed somewhere else.** `design.md` named `src/app.ts` as the one shared line. It was not the conflict. Git merged `src/app.ts` and `tasks.md` on its own, and the rebase left both imports and both mounts, with the preview mount before the redirect. The real conflict was in `src/app.test.ts`: both pull requests appended a new test at the end of the file, and git cannot tell which side comes first. The resolution was to keep both sets of tests and split the closing line so each test closes properly. The plan named the right class of risk and the wrong file. The lesson: put shared test additions in separate files too, the way the plan already did for the browser tests. A file that two tickets append to is a conflict waiting for you.
+- **The planned conflict landed somewhere else.** `design.md` named `src/app.ts` as the one shared line. In the demo, the mounts were not adjacent, and that was not the conflict (in your repo it may be: see step 6). Git merged `src/app.ts` and `tasks.md` on its own, and the rebase left both imports and both mounts, with the preview mount before the redirect. The real conflict was in `src/app.test.ts`: both pull requests appended a new test at the end of the file, and git cannot tell which side comes first. The resolution was to keep both sets of tests and split the closing line so each test closes properly. The plan named the right class of risk and the wrong file. The lesson: put shared test additions in separate files too, the way the plan already did for the browser tests. A file that two tickets append to is a conflict waiting for you.
 - **Both pushes passed the gate first time, and the port clash did not happen.** You might expect two agents to fight over a port. Here is why they did not. Each pre-push gate starts the app inside its own clean export of the commit, on the default port 4390. The `E2E_PORT` values 4391 and 4392 only apply to the interactive `npm run e2e` runs each agent did in its own worktree. So two pushes that overlap in time could still clash on 4390. If a push fails on a port, wait and push again.
 - **The CSV implementer took a shortcut and said so.** Its report says it wrote the tests and the implementation in one pass, then proved the red state afterwards by removing the implementation and seeing 2 failures, instead of watching the tests fail before writing any code. That is the kind of shortcut a reviewer has to catch, because the final result looks identical. The tests did pass, and they were not shown to fail for the right reasons before the code existed. Act 8 adds an adversarial reviewer on a second model, and this is the kind of thing it is there to catch.
 - **`git branch -d` refused.** After a squash merge, git does not see the branch's commits in `main`, because the squash made a new commit. So it says the branch is "not fully merged". That is normal. Once you have confirmed the pull request is merged, `git branch -D` is the correct command.

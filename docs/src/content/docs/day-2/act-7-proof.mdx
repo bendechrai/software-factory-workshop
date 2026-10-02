@@ -69,12 +69,30 @@ You are the orchestrator and the reviewer. Use your `hop` repository from act 6,
    curl -fsSL "$base/.agents/skills/evidence/SKILL.md" -o .agents/skills/evidence/SKILL.md
    ```
 
-   Add the `AGENTS.md` line above. The demo run also gave `bin/**/*.mjs` the Node globals in `eslint.config.js`, so the tool is linted. That change is not in the template folder, so make it yourself if your lint run complains. Check the tool with `node bin/evidence.mjs --help`. Commit and push. On the demo run the pre-commit hook and the pre-push gate both passed.
+   Add the `AGENTS.md` line above. Then let ESLint lint the tool: in `eslint.config.js`, add `"bin/**/*.mjs"` to the `files` list of the block that sets `globals.node`. Without it, the lint run reports 11 errors (`'process' is not defined`, and the same for `fetch`, `setTimeout` and `console`) and the pre-commit hook fails your commit. The demo's block looks like this, with your own entries kept in place of its other ones (the same snippet is in `templates/act-7/eslint-snippet.md`):
 
-2. **Reproduce the known bug by hand first.** Act 5's stats-page design recorded a gap: a custom code that matches a page of the app can be created, and then the page hides its short link. Start the app with `HOP_DB=:memory:` and try it.
+   ```js
+   {
+     files: ["src/**/*.ts", "e2e/**/*.ts", "bin/**/*.mjs", "playwright.config.ts", "eslint.config.js"],
+     languageOptions: { globals: globals.node },
+     rules: { "@typescript-eslint/no-explicit-any": "error" },
+   },
+   ```
+
+   Check the tool with `node bin/evidence.mjs --help` and `npx eslint bin/evidence.mjs`. Commit and push. On the demo run the pre-commit hook and the pre-push gate both passed.
+
+2. **Reproduce the known bug by hand first.** Act 5's stats-page design recorded a gap: a custom code that matches a page of the app can be created, and then the page hides its short link. Start the app in one terminal, on a port that is not the e2e default of 4390:
 
    ```bash
-   curl -s -X POST localhost:4390/api/links \
+   HOP_DB=:memory: PORT=4310 npm run dev
+   ```
+
+   Then try it from another.
+
+   If your app has no `/stats` page, use `api` instead of `stats` in this act: `api` is also reserved by the app, because a short link with the code `api` would be shadowed by the API routes. Change `stats` to `api` in every command, in the steps file and in the proposal.
+
+   ```bash
+   curl -s -X POST localhost:4310/api/links \
      -H 'content-type: application/json' \
      -d '{"url":"https://example.com/reserved","code":"stats"}'
    ```
@@ -100,6 +118,8 @@ You are the orchestrator and the reviewer. Use your `hop` repository from act 6,
 
 6. **Write the steps file** at `evidence/reserved-codes/steps.json`. It has an `expectStatus` or `expectText` on each thing that should change, and a screenshot of each page.
 
+   Adjust the selectors and the code to your app. The ones below (`#url`, `#code`, `button[type=submit]`, `#message`) and the `stats` code match the demo's home page and stats page. Read your own page's HTML, and change them to fit. If you are using `api`, replace `stats` with `api` here too.
+
    ```json
    [
      { "request": { "method": "POST", "path": "/api/links", "body": { "url": "https://example.com/reserved", "code": "stats" } }, "expectStatus": 400 },
@@ -122,16 +142,16 @@ You are the orchestrator and the reviewer. Use your `hop` repository from act 6,
    node bin/evidence.mjs --ref HEAD --out evidence/reserved-codes --name after --script evidence/reserved-codes/steps.json
    ```
 
-   Both exited 0 on the demo run. The before had failures and still exited 0, because the failures are the bug, on record.
+   Each capture runs `npm ci` in its own checkout of the ref, so the first run prints `added 177 packages` and takes a few seconds. Both exited 0 on the demo run. The before had failures and still exited 0, because the failures are the bug, on record.
 
 8. **Look at the screenshots and read the records.** Open all four images and read `after.json`. The next section says what the demo run showed. If the after had not shown the fix, this is the point to go back to step 5.
 
 9. **Commit the evidence** on the branch: the steps file, both records, every screenshot. The demo run ticked task 1.4 in the same commit.
 
-10. **Open the PR with an Evidence section, and hand off.** Push through the gate, then `gh pr create --base main`. The body has a table of what was checked, with the short commit from each record, then the records, then the images. The real table is in the next section. Link the PR on the board and hand it to the reviewer.
+10. **Open the PR with an Evidence section, and hand off.** Push through the gate, then `gh pr create --base main`. The body has a table of what was checked, with the short commit from each record, then the records, then the images. The real table is in the next section. The skill gives a skeleton for the body, with `## What`, `## Evidence` (the table) and `## Checks`. Link the PR on the board and hand it to the reviewer.
 
     ```bash
-    agentboard link <ticket id> --pr 3 --as impl-1
+    agentboard link <ticket id> --pr <n> --as impl-1
     agentboard handoff <ticket id> --to ben --status review --note "<PR url, what to look at>" --as impl-1
     ```
 
@@ -143,6 +163,8 @@ You are the orchestrator and the reviewer. Use your `hop` repository from act 6,
     cd ../hop
     git tag act-7
     ```
+
+    If you cloned the demo to catch up, the tag already exists; use `git tag -f act-7`.
 
 </Steps>
 

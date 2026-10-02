@@ -62,22 +62,20 @@ In this act you play two roles in one session. You are the human reviewer, and y
 
 <Steps>
 
-1. **Install agentboard.** Until the npm release, run it from source:
+1. **Install agentboard.** It is published to npm as `@bendechrai/agentboard`. Install it globally, then check it runs:
 
    ```bash
-   git clone https://github.com/bendechrai/agentboard
-   cd agentboard
-   npm ci
-   npm run build
-   npm link
+   npm install -g @bendechrai/agentboard
+   agentboard version
    ```
 
-   Once it is released, you can skip all of that and run it with `npx -y @bendechrai/agentboard` in place of `agentboard` in every command below.
+   If you would rather not install it, run it with `npx -y @bendechrai/agentboard` in place of `agentboard` in every command below.
 
-2. **Create the board and install the guidance.** Run both in your `hop` repository.
+   If the npm package is not available to you, there is a from-source fallback: the repository link will be given on the day if you need it. Clone it, then run `npm ci`, `npm run build` and `npm link` inside it, and `cd ../hop` before the next step.
+
+2. **Create the board and install the guidance.** Run both in your `hop` repository (if you are not already in it, `cd` there first).
 
    ```bash
-   cd hop
    agentboard init
    agentboard agents install
    ```
@@ -101,7 +99,7 @@ In this act you play two roles in one session. You are the human reviewer, and y
    agents install: 1 created, 2 updated, 0 unchanged, 0 refused (guidance v1) in /path/to/hop
    ```
 
-   In the demo repository `.claude/skills` is a symlink to `../.agents/skills`, so the skill landed in `.agents/skills/agentboard/`. Read the diff, then commit it: `git status --short` shows `.gitignore`, `AGENTS.md`, `openspec/config.yaml` and the new skill folder.
+   In the demo repository `.claude/skills` is a symlink to `../.agents/skills`, so the skill landed in `.agents/skills/agentboard/`. Read the diff, then commit it: `git status --short` shows `.gitignore`, `AGENTS.md`, `openspec/config.yaml` and the new skill folder. If you also ran step 3, it adds an untracked `.mcp.json` too. Commit that as well: the act 6 worktrees are created from `origin/main`, and they will not have it unless it is committed and pushed.
 
 3. **Optional: give the agent the board as tools.** The agent can use the shell commands as they are. An MCP server gives it the same commands as tools. For Claude Code, this writes `.mcp.json`:
 
@@ -171,7 +169,7 @@ In this act you play two roles in one session. You are the human reviewer, and y
    imported openspec:stats-page: 3 created, 0 updated, 0 unchanged, 3 events
    ```
 
-   Your ids will differ. A ticket id can be shortened to any unique prefix of at least 6 characters. Now look at the board, and at the first ticket.
+   Your ids will differ. A ticket id can be shortened to any unique prefix, but tickets created together share a long prefix (the first 10 characters or more are often identical). Copy the whole id from the first column of `agentboard list`, or at least 12 characters of it. Now look at the board, and at the first ticket.
 
    ```bash
    agentboard list --change stats-page
@@ -199,7 +197,7 @@ In this act you play two roles in one session. You are the human reviewer, and y
    events: 1
    ```
 
-   (The checklist lines are cut short here. On screen they carry the whole task text.) Each ticket names the task it delivers in `task:`, and carries the task lines as its checklist.
+   (The checklist lines are cut short here. On screen they carry the whole task text.) Each ticket names the task it delivers in `task:`, and carries the task lines as its checklist. The checklist does not follow the ticks in `tasks.md`: when the agent ticks a task there, `agentboard show` still prints `[ ]`. That is by design. `tasks.md` is the record of what is done, and the board only says who has what.
 
 7. **Hand the work to the agent as the implementer.** In your harness, give this prompt.
 
@@ -313,7 +311,7 @@ In this act you play two roles in one session. You are the human reviewer, and y
     agentboard list --change stats-page
     ```
 
-    On the demo run `close-merged` printed `close-merged: 0 closed, 0 unmerged, 0 skipped`, because no ticket had a pull request link. That is expected here. Act 6 adds the pull requests. `list` printed nothing, so nothing was open, and the archive went ahead.
+    On the demo run `close-merged` printed `close-merged: 0 closed, 0 unmerged, 0 skipped`, because no ticket had a pull request link. That is expected here. Act 6 adds the pull requests. `list` printed nothing, so nothing was open, and the archive went ahead. Commit the archive (and push it), so act 6 starts from a clean `main` with the change archived.
 
 14. **Check, then tag.**
 
@@ -321,6 +319,8 @@ In this act you play two roles in one session. You are the human reviewer, and y
     bin/preflight.sh HEAD
     git tag act-5
     ```
+
+    If you cloned the demo to catch up, the tag already exists; use `git tag -f act-5`.
 
 </Steps>
 

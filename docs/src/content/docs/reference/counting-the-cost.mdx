@@ -19,6 +19,14 @@ Run that from your `hop` folder. It finds your project from the current folder. 
 CLAUDE_CONFIG_DIR=~/.claude-workshop node ../software-factory-workshop/tools/ledger/ledger.mjs
 ```
 
+To cost one window of work, such as an act or one orchestrator run, add the start time and split by agent. This is the one recipe every act uses. Run it from your `hop` folder (for example `~/workshop/hop`):
+
+```bash
+node ../software-factory-workshop/tools/ledger/ledger.mjs --since <ISO time> --by agent
+```
+
+With the sandbox, put `CLAUDE_CONFIG_DIR=~/.claude-workshop` in front. Add `--no-cache` only when you want a cold recount.
+
 ## What the ledger reads
 
 - Claude Code's local logs, in `${CLAUDE_CONFIG_DIR:-~/.claude}/projects/<your folder path>/`. They are JSONL files. Nothing is sent anywhere.

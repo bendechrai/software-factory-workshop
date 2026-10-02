@@ -47,6 +47,26 @@ the same way against named commits, is evidence.
    `![after](https://github.com/bendechrai/hop-demo/blob/fix/reserved-codes-g1/evidence/reserved-codes/after-home.png?raw=true)`.
    The short shas come from `shortCommit` in the records, not from memory.
 
+   Skeleton for the whole PR body:
+
+   ```
+   ## What
+   <one or two sentences: what changed and why>
+
+   ## Evidence
+   | Checked | Before | After |
+   |---|---|---|
+   | <what was checked> | <short sha>: <result> | <short sha>: <result> |
+
+   ![before](<image URL>)
+   ![after](<image URL>)
+
+   ## Checks
+   - npm run verify: exit 0
+   - E2E_PORT=4391 npm run e2e: exit 0
+   - Waived: <gate> - <reason> (only if one was waived)
+   ```
+
 ## Never
 
 - Present a screenshot of the wrong commit, or one captured some other way.

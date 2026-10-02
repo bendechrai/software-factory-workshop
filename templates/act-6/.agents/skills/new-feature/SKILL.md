@@ -23,13 +23,15 @@ Replace `<id>`, `<you>`, `<reviewer>`, `<type>`, `<change>` and `<group>` below.
    slashes replaced by hyphens. Never inside the repo, never a plain sibling.
    ```
    REPO=$(basename "$(git rev-parse --show-toplevel)")
-   git worktree add ../$REPO.worktrees/feat-link-extras-g1 -b feat/link-extras-g1 origin/main
+   git worktree add ../$REPO.worktrees/feat-link-extras-g1 -b feat/link-extras-g1 --no-track origin/main
    ```
-   For repo `hop` that is `../hop.worktrees/feat-link-extras-g1`.
+   For repo `hop` that is `../hop.worktrees/feat-link-extras-g1`. `--no-track` keeps the
+   branch from tracking `origin/main`, so a bare `git push` can never push to main.
 
 4. **Enter and prepare it.** `cd ../hop.worktrees/feat-link-extras-g1`, then `npm ci`.
    Do not run `bin/setup-git-hooks.sh`: `core.hooksPath` is shared config. Verify with
    `git config core.hooksPath`. Confirm `git branch --show-current` is not `main`.
+   If you skip `npm ci`, the first commit fails in the hook with "tsc: command not found".
 
 5. **Keep ports and databases apart.** Worktrees share files but not ports or databases.
    If you start the app, pick a port from your ticket number range and use
@@ -37,9 +39,14 @@ Replace `<id>`, `<you>`, `<reviewer>`, `<type>`, `<change>` and `<group>` below.
    `E2E_PORT`. Each worktree must use a different one: suggest `4390 + <group>`, for example
    `E2E_PORT=4391 npm run e2e` for group 1.
 
-6. **Work the ticket.** Follow the agentboard flow and the `openspec-apply-change` skill for
-   your task group only. Tick your tasks in `tasks.md`. Commit inside the worktree. The
-   pre-commit hook runs; never use `--no-verify`.
+6. **Work the ticket.** Follow the `openspec-apply-change` skill for your task group only,
+   and move the ticket as you go. The moves are in this order, and any other order is
+   refused with `invalid-transition`:
+   `agentboard move <id> tests --as <you>` before you write the failing tests,
+   `agentboard move <id> implementing --as <you>` before you make them pass, then the
+   handoff to review in step 7 (a handoff to `review` straight from `tests` is refused).
+   Tick your tasks in `tasks.md`. Commit inside the worktree. The pre-commit hook runs;
+   never use `--no-verify`.
 
 7. **Ship.**
    ```

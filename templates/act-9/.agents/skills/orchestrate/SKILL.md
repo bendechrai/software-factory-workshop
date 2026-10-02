@@ -181,13 +181,17 @@ from whatever it was.
     synced specs under `openspec/specs/`, commit on main with a message
     that says why, and push (the pre-push gate runs).
 
-13. **Record the cost.** From the workshop repository:
+13. **Record the cost.** From the repository folder (for example
+    `~/workshop/hop`), not from the workshop clone. The ledger finds the
+    project from the current folder:
     ```
-    node tools/ledger/ledger.mjs --project ~/.claude/projects/<project dir> --since <ISO time the run started> --by agent --no-cache
-    node tools/ledger/ledger.mjs --project ~/.claude/projects/<project dir> --since <ISO time the run started> --by model --no-cache
+    node ../software-factory-workshop/tools/ledger/ledger.mjs --since <ISO time the run started> --by agent
+    node ../software-factory-workshop/tools/ledger/ledger.mjs --since <ISO time the run started> --by model
     ```
-    Add `--openrouter <repo>/.agents/review/openrouter-usage.jsonl` if a
-    second opinion ran. Put both tables in the run's report.
+    With the sandbox, put `CLAUDE_CONFIG_DIR=~/.claude-workshop` in front of
+    each command. Add `--no-cache` only when you want a cold recount.
+    Add `--openrouter .agents/review/openrouter-usage.jsonl` if a second
+    opinion ran. Put both tables in the run's report.
 
 ## Never
 

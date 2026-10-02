@@ -26,13 +26,13 @@ Run the dry run first, every time.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `HARNESS_CMD` | `claude -p --permission-mode acceptEdits --output-format json --max-budget-usd ${RUN_BUDGET_USD:-5}` | The headless command. The prompt is appended as its last argument. |
+| `HARNESS_CMD` | `claude -p --allowedTools Bash(git:*),Bash(gh:*),Bash(agentboard:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(openspec:*),Read,Edit,Write,Glob,Grep --permission-mode acceptEdits --output-format json --max-budget-usd ${RUN_BUDGET_USD:-5}` | The headless command. The prompt is appended as its last argument. The `--allowedTools` list lets a headless session run the shell commands the orchestrate skill needs. It is untested in a real loop. |
 | `RUN_BUDGET_USD` | `5` | Spend cap per run, used by the default Claude command only. |
 | `MAX_ITERATIONS` | `5` | Most iterations the loop will start. |
 | `MAX_MINUTES` | `120` | Wall-clock limit for the whole loop. Decimals work (`0.5`). |
 | `SLEEP_SECONDS` | `30` | Cool-down between iterations. |
 | `MAX_FAILURES` | `3` | Stop after this many failed harness runs in a row. |
-| `WORKSHOP_DIR` | `../..` from the repo | Where the workshop checkout is, for the cost hint. |
+| `WORKSHOP_DIR` | `../software-factory-workshop` from the repo | Where the workshop checkout is, for the cost hint. |
 
 ### Other harnesses
 
@@ -41,7 +41,7 @@ one, must come last in the command.
 
 | Harness | `HARNESS_CMD` |
 |---|---|
-| Claude Code | `claude -p --permission-mode acceptEdits --output-format json --max-budget-usd 5` |
+| Claude Code | `claude -p --allowedTools Bash(git:*),Bash(gh:*),Bash(agentboard:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(openspec:*),Read,Edit,Write,Glob,Grep --permission-mode acceptEdits --output-format json --max-budget-usd 5` |
 | Codex | `codex exec --sandbox workspace-write --json` |
 | Gemini CLI | `gemini --approval-mode auto_edit -o json -p` |
 | Cursor | `agent -p --force --output-format json` |
@@ -91,8 +91,11 @@ All three of `runs/`, `STOP` and `loop.log` are gitignored.
 When the loop ends it prints the ledger command for its time window:
 
 ```
-node <workshop>/tools/ledger/ledger.mjs --since <loop start> --by agent
+cd <your repo>
+node "<workshop>/tools/ledger/ledger.mjs" --since <loop start> --by agent
 ```
+
+Put `CLAUDE_CONFIG_DIR=~/.claude-workshop` in front of the `node` command if you use the sandbox. Add `--no-cache` only when you want a cold recount.
 
 ## Overnight, in tmux
 

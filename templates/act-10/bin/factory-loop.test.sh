@@ -44,7 +44,7 @@ check "drains 3 tickets, then exits 0 with 'board empty' after 3 harness calls" 
 lines=$(awk 'END { print NR }' "$T/.agents/loop/loop.log")
 check "logs one loop.log line and one runs/ file per iteration" \
   '(( lines == 3 )) && [ "$(ls "$T/.agents/loop/runs"/*.json | wc -l)" -eq 3 ]'
-check "prints the ledger cost hint" 'has "ledger.mjs --since"'
+check "prints the ledger cost hint" 'has "ledger.mjs. --since"'
 
 setup 3; FAKE_MODE=noop MAX_ITERATIONS=2 run_loop
 check "stops at MAX_ITERATIONS with noop (2 calls, exit 0)" \
