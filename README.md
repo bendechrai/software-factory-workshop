@@ -45,6 +45,6 @@ cd docs && npm install && npm run dev
 ## Status
 
 - Every hands-on step was run on the demo app with Claude Code. Then it was walked through literally from clean folders. There were two walkthroughs, and the defects they found are fixed.
-- The Codex CLI tabs were tested with Codex CLI 0.160.0 through OpenRouter. The Gemini and Cursor tabs are written from their docs and were not run yet.
+- The Codex CLI tabs were tested with Codex CLI 0.160.0 through OpenRouter. The Gemini and Cursor tabs are written from their docs and were not run yet. Gemini CLI sign-in with a personal Google account failed on 2026-10-02 (client no longer supported); use `GEMINI_API_KEY`.
 - The act 10 loop is tested against a fake harness only.
 - agentboard is on npm as `@bendechrai/agentboard` (version 0.1.0 at the time of writing), with docs at https://bendechrai.github.io/agentboard/.

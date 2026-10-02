@@ -10,15 +10,15 @@ import { Aside } from '@astrojs/starlight/components';
 Everything in this workshop runs on any of these four. This page is the lookup table for the places where they differ. Versions and facts were checked against each vendor's documentation on 1 October 2026; the exact pages are listed at the bottom.
 
 <Aside type="caution">
-Claude Code was exercised end to end while building this guide. The Codex CLI column was tested with Codex CLI 0.160.0 through OpenRouter: the sandbox home, `AGENTS.md`, skills, hooks, MCP, custom agents, headless flags and the worktree flag. The Gemini CLI and Cursor columns still come from their documentation (testing is pending sign-in) and are marked as such throughout.
+Claude Code was exercised end to end while building this guide. The Codex CLI column was tested with Codex CLI 0.160.0 through OpenRouter: the sandbox home, `AGENTS.md`, skills, hooks, MCP, custom agents, headless flags and the worktree flag. The Gemini CLI and Cursor columns still come from their documentation and are marked as such throughout. For Gemini CLI, only the sandbox folder was run, and signing in with a personal Google account was tried on 2026-10-02 and failed (see the sandbox table).
 </Aside>
 
 ## The sandbox
 
 | | Claude Code | Codex CLI | Gemini CLI | Cursor CLI |
 |---|---|---|---|---|
-| Fresh home | `CLAUDE_CONFIG_DIR=<dir> claude` | `CODEX_HOME=<dir> codex` (directory must exist; the home is not created for you) | `GEMINI_CLI_HOME=<parent> gemini` (creates `<parent>/.gemini`) | `CURSOR_CONFIG_DIR=<dir> agent` (scope not fully documented) |
-| Sign in again | `claude auth login` | `codex login`, or with OpenRouter set `OPENROUTER_API_KEY` and `model_provider = "openrouter"` in `$CODEX_HOME/config.toml` (`codex login status` still says not logged in) | first run prompts | first run prompts |
+| Fresh home | `CLAUDE_CONFIG_DIR=<dir> claude` | `CODEX_HOME=<dir> codex` (directory must exist; the home is not created for you) | `GEMINI_CLI_HOME=<parent> gemini` (creates `<parent>/.gemini`; run and confirmed on 2026-10-02) | `CURSOR_CONFIG_DIR=<dir> agent` (scope not fully documented) |
+| Sign in again | `claude auth login` | `codex login`, or with OpenRouter set `OPENROUTER_API_KEY` and `model_provider = "openrouter"` in `$CODEX_HOME/config.toml` (`codex login status` still says not logged in) | `GEMINI_API_KEY=<key>` from Google AI Studio, then choose "Use Gemini API key" (written from the docs, not run). "Login with Google" with a personal account failed on 2026-10-02: "This client is no longer supported for Gemini Code Assist for individuals" | first run prompts |
 | Still loads | project `AGENTS.md`, `.claude/`, `.mcp.json` | project files, `~/.agents/skills` (rename it to hide it), and Codex's bundled skills, always | project `.gemini/` | project `.cursor/` |
 
 ## One instruction file: AGENTS.md
@@ -80,5 +80,6 @@ The workshop's gates are git hooks, not harness hooks, precisely so they work th
 
 - Claude Code: https://code.claude.com/docs/en/env-vars, https://code.claude.com/docs/en/memory, https://code.claude.com/docs/en/skills, https://code.claude.com/docs/en/sub-agents, https://code.claude.com/docs/en/worktrees, https://code.claude.com/docs/en/hooks, https://code.claude.com/docs/en/headless
 - Codex CLI: https://learn.chatgpt.com/docs/config-file/environment-variables, https://learn.chatgpt.com/docs/agent-configuration/agents-md, https://learn.chatgpt.com/docs/build-skills, https://learn.chatgpt.com/docs/agent-configuration/subagents, https://learn.chatgpt.com/docs/hooks, https://learn.chatgpt.com/docs/non-interactive-mode
+- Gemini CLI sign-in change: https://docs.cloud.google.com/gemini/docs/codeassist/release-notes (2026-06-18), https://github.com/google-gemini/gemini-cli/discussions/27274, https://github.com/google-gemini/gemini-cli/issues/28229. The authentication page https://github.com/google-gemini/gemini-cli/blob/main/docs/get-started/authentication.mdx still recommends Sign in with Google for individuals, which no longer matches what happens.
 - Gemini CLI: https://github.com/google-gemini/gemini-cli/tree/main/docs (configuration, gemini-md, skills, subagents, git-worktrees, hooks, headless)
 - Cursor: https://cursor.com/docs/cli/reference/configuration, https://cursor.com/docs/rules, https://cursor.com/docs/skills, https://cursor.com/docs/subagents, https://cursor.com/docs/hooks, https://cursor.com/docs/cli/headless

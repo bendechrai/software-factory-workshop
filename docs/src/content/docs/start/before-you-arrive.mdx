@@ -34,7 +34,8 @@ Do this the day before. It takes about twenty minutes, most of it waiting on dow
        gemini --version
        ```
        Use npm, not Homebrew. The Homebrew formula was several releases behind when this was written.
-       Written from the docs, not run.
+
+       Do not plan on "Login with Google" with a personal account. On 2026-10-02 it failed with: "Failed to sign in. Message: This client is no longer supported for Gemini Code Assist for individuals. To continue using Gemini, please migrate to the Antigravity suite of products: https://antigravity.google". Google stopped serving Gemini CLI to Gemini Code Assist for individuals, Google AI Pro and Google AI Ultra accounts on 2026-06-18. Use a Gemini API key from https://aistudio.google.com/app/apikey instead: `export GEMINI_API_KEY="<your key>"`, start `gemini` and pick "Use Gemini API key". A free-tier key is limited to Flash models and 250 requests a day; a paid key has no such cap. Vertex AI and Gemini Code Assist Standard or Enterprise licences are documented as still supported. The installation commands and the API key route are written from the docs, not run. The sign-in failure itself was observed.
      </TabItem>
      <TabItem label="Cursor">
        ```bash
@@ -126,8 +127,14 @@ Act 1 starts every attendee from the same place: your own harness, with none of 
     alias gemini-workshop='GEMINI_CLI_HOME=~/gemini-workshop gemini'
     gemini-workshop
     ```
-    `GEMINI_CLI_HOME` is the parent of the `.gemini` folder, not the folder itself. The first run creates `~/gemini-workshop/.gemini` and asks you to sign in.
-       Written from the docs, not run.
+    `GEMINI_CLI_HOME` is the parent of the `.gemini` folder, not the folder itself. The first run creates `~/gemini-workshop/.gemini`. That part was run and works: it created `google_accounts.json`, `history` and `installation_id` there.
+
+    Signing in with a personal Google account does not work (see the install tab for the error). Export your API key before starting instead:
+    ```bash
+    export GEMINI_API_KEY="<your key from Google AI Studio>"
+    gemini-workshop
+    ```
+    Choose "Use Gemini API key" when asked. Using the key with the sandbox folder is written from the docs, not run.
      </TabItem>
   <TabItem label="Cursor">
     ```bash
