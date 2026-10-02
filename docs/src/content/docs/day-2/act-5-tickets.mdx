@@ -1,0 +1,366 @@
+---
+title: "Act 5: tickets"
+description: A board the agents share, fed from the spec's tasks. Agents claim, hand off and block work on a board you can watch, and the decisions they make get written down before a ticket closes.
+sidebar:
+  order: 5
+  label: "Act 5: tickets"
+---
+
+import { Tabs, TabItem, Steps, Aside, Code } from '@astrojs/starlight/components';
+import skill from '../../../../../templates/act-5/agentboard-SKILL.md?raw';
+
+**The idea.** A spec says what to build. A board says who is doing which part of it right now. When several agents work on one change, they need a shared view that is written down, that survives a context reset and that does not depend on any agent's memory. The board is that view. It is not the record of completion: that is `tasks.md`, ticked in the commit that does the work. It is not where decisions live either: that is the spec or an ADR. The board only says who has what, and where it stands.
+
+**Time:** about 55 minutes. 15 for the talk, 30 hands-on, 10 to compare.
+
+## The talk
+
+1. **Why a board.** Act 4 ended with a task list. One agent can work through a list in order. Two agents cannot, unless they can see each other. Without a shared view, two agents pick the same task, or both stop and each thinks the other is carrying on. A ticket per task group fixes that: it has one owner at a time, a status, and a trail of what happened.
+2. **agentboard is an append-only event log.** The board lives under `.board/`. It is its own small git repository, and the host repository ignores it. Every change is written as its own event file, so two agents writing at the same moment never overwrite each other. The log is the source of truth, and the current state of a ticket is worked out from it. agentboard also finds the main checkout's board from every worktree. That matters in act 6, when each ticket gets its own worktree and they all still need the same board.
+3. **Five rules.** The install puts them in `AGENTS.md` and in a skill, so every agent reads them. They are in the file below. In short: always say who you are, claim before you work, never stop silently, tick `tasks.md` and not the board, and promote every decision before a ticket closes.
+4. **Statuses and moves.** A ticket is `todo`, `tests`, `implementing`, `review`, `merged` or `blocked`. The permitted moves are: todo to tests, tests to implementing, implementing to review, review back to implementing or tests or on to merged, and any status but merged to blocked. Any other move is refused with `invalid-transition`. The order is the point. Tests come before implementation, and review comes before merged.
+5. **Four roles.** The orchestrator imports the change and dispatches work. The test author writes the failing tests. The implementer makes them pass. The reviewer decides what merges. Each role has a short checklist that the installed tool prints: `agentboard help agents --role <role>`. Each role instance uses one stable name, such as `impl-1`.
+6. **Decisions need a home.** When an agent settles something while building, it writes a comment that starts with `DECISION:`. A ticket with an unpromoted decision cannot be closed with `--no-decision`. Someone has to write the decision into the spec or an ADR, and name that file when closing. A decision that lives only in a ticket is lost when the board is cleaned up.
+7. **There is an established alternative.** [beads](/software-factory-workshop/reference/beads/) is a well known issue tracker for agents. This workshop uses agentboard because it is small enough to read in one sitting and it knows about OpenSpec change tasks.
+
+## The files
+
+The skill that the install writes into your project. Agents load it when they claim, hand off, block or record a decision. The five rules are in the middle of it.
+
+<Code code={skill} lang="md" title=".agents/skills/agentboard/SKILL.md" />
+
+The install also adds a block to `AGENTS.md`, between `<!-- agentboard:start v1 -->` and `<!-- agentboard:end -->`, with the same five rules. It adds guidance entries to `openspec/config.yaml`, so the apply step says to claim a ticket first and the archive step says to run `close-merged` and promote decisions first. And it adds one line to `.gitignore`: `.board/`.
+
+The orchestrator checklist, as the tool prints it:
+
+```text
+1. Before dispatching anything, read and act on every entry of:
+  agentboard inbox --as <actor>
+2. When a change is proposed, or its tasks.md gains lines, import it:
+  agentboard import-change <change> --as <actor>
+3. Dispatch one agent per ticket and role (test author, implementer,
+   reviewer), each with its own actor name; ...
+```
+
+The implementer checklist:
+
+```text
+1. Claim the ticket, or accept the handoff you were given:
+  agentboard claim <id> --as <actor>
+2. Make the tests pass without editing them. Tick the task lines in
+   tasks.md in the implementing pull request.
+3. Record each decision you take as a comment:
+  agentboard comment <id> "DECISION: <what was decided>" --as <actor>
+...
+5. When done, hand off to the reviewer:
+  agentboard handoff <id> --to <reviewer> --status review --note "<what changed>" --as <actor>
+```
+
+## Hands-on
+
+In this act you play two roles in one session. You are the human reviewer, and you stand in for the orchestrator. The agent is the implementer. Act 9 automates the orchestrator. For now, you type its commands.
+
+<Steps>
+
+1. **Install agentboard.** Until the npm release, run it from source:
+
+   ```bash
+   git clone https://github.com/bendechrai/agentboard
+   cd agentboard
+   npm ci
+   npm run build
+   npm link
+   ```
+
+   Once it is released, you can skip all of that and run it with `npx -y @bendechrai/agentboard` in place of `agentboard` in every command below.
+
+2. **Create the board and install the guidance.** Run both in your `hop` repository.
+
+   ```bash
+   cd hop
+   agentboard init
+   agentboard agents install
+   ```
+
+   `init` prints:
+
+   ```text
+   created the board at /path/to/hop/.board
+   Next: run 'agentboard agents install' so this project's coding agents learn to use the board.
+   ```
+
+   `agents install` selects the targets it finds in your project and prints:
+
+   ```text
+   selected claude: .claude/ exists
+   selected agents-md: AGENTS.md exists
+   selected openspec: openspec/config.yaml exists
+   created claude .claude/skills/agentboard/SKILL.md
+   updated agents-md AGENTS.md
+   updated openspec openspec/config.yaml
+   agents install: 1 created, 2 updated, 0 unchanged, 0 refused (guidance v1) in /path/to/hop
+   ```
+
+   In the demo repository `.claude/skills` is a symlink to `../.agents/skills`, so the skill landed in `.agents/skills/agentboard/`. Read the diff, then commit it: `git status --short` shows `.gitignore`, `AGENTS.md`, `openspec/config.yaml` and the new skill folder.
+
+3. **Optional: give the agent the board as tools.** The agent can use the shell commands as they are. An MCP server gives it the same commands as tools. For Claude Code, this writes `.mcp.json`:
+
+   ```bash
+   agentboard agents install --mcp-command agentboard
+   ```
+
+   `--mcp-command` runs your linked `agentboard` with the argument `mcp`. Without it, `.mcp.json` runs `npx -y @bendechrai/agentboard mcp`. For the other harnesses, register the server `agentboard mcp` yourself.
+
+   <Tabs syncKey="harness">
+     <TabItem label="Claude Code">
+       The command above is all you need. It writes the server into `.mcp.json` at the repo root. Restart your harness so it loads it.
+     </TabItem>
+     <TabItem label="Codex CLI">
+       Add to `.codex/config.toml`:
+       ```toml
+       [mcp_servers.agentboard]
+       command = "agentboard"
+       args = ["mcp"]
+       ```
+       Written from the Codex docs, not run.
+     </TabItem>
+     <TabItem label="Gemini CLI">
+       Add to `.gemini/settings.json`:
+       ```json
+       { "mcpServers": { "agentboard": { "command": "agentboard", "args": ["mcp"] } } }
+       ```
+       Written from the Gemini docs, not run.
+     </TabItem>
+     <TabItem label="Cursor">
+       Create `.cursor/mcp.json`:
+       ```json
+       { "mcpServers": { "agentboard": { "command": "agentboard", "args": ["mcp"] } } }
+       ```
+       Written from the Cursor docs, not run.
+     </TabItem>
+   </Tabs>
+
+   A tool is named `board_` plus the command, such as `board_claim` or `board_handoff`. The actor is the `as` argument. Skip this step if you would rather stay in the shell. Nothing later needs it.
+
+4. **Watch the board.** Open a second window beside your harness and leave it open for the rest of the act.
+
+   ```bash
+   agentboard serve
+   ```
+
+   It prints a local address with a one-time token. Open it in a browser to see every ticket, the activity feed and one lane per agent, updating live. If you prefer the terminal, run `agentboard top` instead. Both are read-only.
+
+5. **Propose the change.** Use the propose command from act 4, with this idea and one extra instruction so the task list has the shape the rest of this act needs.
+
+   ```text
+   A stats page at /stats. It shows the total number of links, the total number of clicks across all links, and the five most clicked links with their code, destination and click count. Expired links are included in the totals but marked expired in the top five. The home page gets a Stats link in its header, and the stats page has a link back home. The page is plain HTML served by the app, like the home page, and reads its numbers from a new JSON endpoint GET /api/stats.
+   ```
+
+   Name the change `stats-page`. Ask for exactly three task groups, in this order: "1. Stats service", "2. Stats action and routes", "3. Pages and browser test". Each group gets 2 to 4 checkbox lines, and each line names its files and says how it is verified, as in act 4. Validate it with `openspec validate stats-page --strict`, read it, and commit it. The board is fed from this file, so this is the moment to fix a bad task list.
+
+6. **Import the change as the orchestrator.** One ticket is created for each task group.
+
+   ```bash
+   agentboard import-change stats-page --as orch
+   ```
+
+   ```text
+   created 01M3X8BWBKRRN85121SJETN3D5  todo  -  Stats service
+   created 01M3X8BWC0573VVVQS61BBRYVP  todo  -  Stats action and routes
+   created 01M3X8BWCA79ZPJRWBBHQ2JCE7  todo  -  Pages and browser test
+   imported openspec:stats-page: 3 created, 0 updated, 0 unchanged, 3 events
+   ```
+
+   Your ids will differ. A ticket id can be shortened to any unique prefix of at least 6 characters. Now look at the board, and at the first ticket.
+
+   ```bash
+   agentboard list --change stats-page
+   agentboard show 01M3X8BWBKRRN85121SJETN3D5
+   ```
+
+   ```text
+   01M3X8BWBKRRN85121SJETN3D5  todo  -  Stats service
+   01M3X8BWC0573VVVQS61BBRYVP  todo  -  Stats action and routes
+   01M3X8BWCA79ZPJRWBBHQ2JCE7  todo  -  Pages and browser test
+   ```
+
+   ```text
+   id: 01M3X8BWBKRRN85121SJETN3D5
+   title: Stats service
+   status: todo
+   assignee: -
+   task: openspec:stats-page#1
+   labels: change:stats-page, group:1
+   checklist:
+     [ ] 0 1.1 Move `COLUMNS` and `toLink` out of `src/services/links.ts` into ...
+     [ ] 1 1.2 Add `src/services/stats.ts` with `createStatsService(db)` whose ...
+     [ ] 2 1.3 Add `topLinks(limit)` to the stats service, returning at most ...
+   closed: no
+   events: 1
+   ```
+
+   (The checklist lines are cut short here. On screen they carry the whole task text.) Each ticket names the task it delivers in `task:`, and carries the task lines as its checklist.
+
+7. **Hand the work to the agent as the implementer.** In your harness, give this prompt.
+
+   ```text
+   You are impl-1. Work the stats-page tickets one at a time following the agentboard skill and the apply skill. Hand each one to me for review.
+   ```
+
+   For each ticket the agent should do the same loop. The outputs here are from ticket 1 on the demo run.
+
+   1. **Look at the inbox.** It prints every event since the actor last asked, and marks them read.
+
+      ```text
+      $ agentboard inbox --as impl-1
+      01M3X8BWBKRRN85121SJETN3D5  ticket.create  orch
+      01M3X8BWC0573VVVQS61BBRYVP  ticket.create  orch
+      01M3X8BWCA79ZPJRWBBHQ2JCE7  ticket.create  orch
+      ```
+   2. **Claim the ticket.** If another actor holds it, the claim is refused with exit 4 and the agent must not work on it.
+
+      ```text
+      $ agentboard claim 01M3X8BWBKRRN85121SJETN3D5 --as impl-1
+      01M3X8BWBKRRN85121SJETN3D5  todo  impl-1  Stats service
+      ```
+   3. **Move to `tests` and write the failing tests.** The agent ran them and saw them fail: the module did not exist yet.
+
+      ```text
+      $ agentboard move 01M3X8BWBKRRN85121SJETN3D5 tests --as impl-1
+      01M3X8BWBKRRN85121SJETN3D5  tests  impl-1  Stats service
+      ```
+   4. **Move to `implementing` and make them pass.** The agent ticks the task lines in `tasks.md` in the same commit as the code. The commit hook from act 3 runs on it.
+
+      ```text
+      $ agentboard move 01M3X8BWBKRRN85121SJETN3D5 implementing --as impl-1
+      01M3X8BWBKRRN85121SJETN3D5  implementing  impl-1  Stats service
+      ```
+   5. **Verify.** `npm run verify` passed with 36 tests. The agent waived the browser test for this ticket, and said why: it applies to a page, route or stylesheet change, and group 1 touched none.
+   6. **Hand off to you with a note that names the commit.** One command reassigns the ticket, moves it and leaves the note.
+
+      ```text
+      $ agentboard handoff 01M3X8BWBKRRN85121SJETN3D5 --to ben --status review --note "Stats service done in commit 51c2a51: src/services/stats.ts (totals and topLinks) with src/services/stats.test.ts against the throwaway database, and the row mapping moved to src/services/link-row.ts; look at the ORDER BY in stats.ts and the tie test. npm run verify exit 0; e2e waived, no page or route changed." --as impl-1
+      01M3X8BWBKRRN85121SJETN3D5  review  ben  Stats service
+      ```
+
+   Use your own name in place of `ben` when you tell the agent who the reviewer is. The agent stops after each handoff. It does not start the next ticket until you tell it to.
+
+8. **Watch for a decision.** On ticket 2 the agent had to choose how the top list orders links that have the same click count. The spec left it open on purpose, so this would be a real decision. It wrote it down on the ticket as it went.
+
+   ```bash
+   agentboard comment 01M3X8BWC0573VVVQS61BBRYVP "DECISION: the top list shows five links, ordered by clicks then by creation date, so the order is stable when counts tie" --as impl-1
+   ```
+
+   Your run may hit a different decision, or none. If the agent makes one and does not write it as a `DECISION:` comment, ask it to.
+
+9. **Review each ticket, then merge it.** Read the handoff note, run `agentboard show <id>`, and look at the commit the note names with `git show --stat <commit>`. The note says where to look. When you are happy, move the ticket on.
+
+   ```text
+   $ agentboard move 01M3X8BWBKRRN85121SJETN3D5 merged --as ben
+   01M3X8BWBKRRN85121SJETN3D5  merged  ben  Stats service
+   ```
+
+   If you are not happy, move it back to `implementing` and say why in a comment. The agent picks it up from its inbox.
+
+10. **Try to close the decision ticket without recording the decision.** This is the refusal you want to see.
+
+    ```bash
+    agentboard close 01M3X8BWC0573VVVQS61BBRYVP --no-decision --as ben
+    ```
+
+    ```text
+    agentboard: ticket 01M3X8BWC0573VVVQS61BBRYVP cannot be closed with --no-decision; it has decision comments:
+      impl-1: "DECISION: the top list shows five links, ordered by clicks then by creation date, so the order is stable when counts tie"
+    A decision made in a ticket must be recorded in a spec delta or ADR and named with --decision-recorded-in <path>, or retracted with a RETRACTED: comment by the same actor.
+    hint: read the DECISION: comments with 'agentboard show 01M3X8BWC0573VVVQS61BBRYVP', promote them to a spec delta or ADR and run 'agentboard close 01M3X8BWC0573VVVQS61BBRYVP --decision-recorded-in <path> --as ben', or if you wrote one, retract it with 'agentboard comment 01M3X8BWC0573VVVQS61BBRYVP "RETRACTED: <why>" --as ben'
+    ```
+
+    The exit code is 1. Close the other two tickets, which have no decisions, with `--no-decision`.
+
+11. **Promote the decision, then close.** Ask the agent to write the decision into `openspec/changes/stats-page/design.md`, quoting it with the ticket id and the actor, and to settle the open question the design listed. On the demo run it added a section called `## Decisions recorded during implementation`, and committed it. Then close the ticket and name the file.
+
+    ```bash
+    agentboard close 01M3X8BWC0573VVVQS61BBRYVP --decision-recorded-in openspec/changes/stats-page/design.md --as ben
+    ```
+
+    ```text
+    01M3X8BWC0573VVVQS61BBRYVP  merged  ben  [closed] Stats action and routes
+    ```
+
+12. **Check the board's health.**
+
+    ```bash
+    agentboard health
+    ```
+
+    ```text
+    thresholds: stale after 2h, blocked after 1d
+    stale claims: 0
+    stuck in blocked: 0
+    unpromoted decisions: 0
+    close-merged ready: 0
+    close-merged held by decision: 0
+    close-merged missing pr: 0
+    cache check: not run
+    ```
+
+    Everything is zero. A stale claim or an unpromoted decision would show here before it bit you.
+
+13. **Archive the change, with the board clean first.** Run the archive command from act 4. Its guidance now says to run `close-merged` first and check that no ticket of the change is still open. Do that yourself if the agent does not.
+
+    ```bash
+    agentboard close-merged --as orch
+    agentboard list --change stats-page
+    ```
+
+    On the demo run `close-merged` printed `close-merged: 0 closed, 0 unmerged, 0 skipped`, because no ticket had a pull request link. That is expected here. Act 6 adds the pull requests. `list` printed nothing, so nothing was open, and the archive went ahead.
+
+14. **Check, then tag.**
+
+    ```bash
+    bin/preflight.sh HEAD
+    git tag act-5
+    ```
+
+</Steps>
+
+## What you see
+
+The orchestrator's inbox is the story of the change. This is the final `agentboard inbox --as orch` on the demo run, with the long notes cut short:
+
+```text
+01M3X8BWBKRRN85121SJETN3D5  ticket.create  orch
+01M3X8BWC0573VVVQS61BBRYVP  ticket.create  orch
+01M3X8BWCA79ZPJRWBBHQ2JCE7  ticket.create  orch
+01M3X8BWBKRRN85121SJETN3D5  ticket.claim  impl-1
+01M3X8BWBKRRN85121SJETN3D5  ticket.move  impl-1  status tests
+01M3X8BWBKRRN85121SJETN3D5  ticket.move  impl-1  status implementing
+01M3X8BWBKRRN85121SJETN3D5  ticket.handoff  impl-1  to ben  status review  note Stats service done in commit 51c2a51: ...
+01M3X8BWC0573VVVQS61BBRYVP  ticket.claim  impl-1
+01M3X8BWC0573VVVQS61BBRYVP  ticket.move  impl-1  status tests
+01M3X8BWC0573VVVQS61BBRYVP  ticket.move  impl-1  status implementing
+01M3X8BWC0573VVVQS61BBRYVP  ticket.comment  impl-1  note DECISION: the top list shows five links, ...
+01M3X8BWC0573VVVQS61BBRYVP  ticket.handoff  impl-1  to ben  status review  note Stats action and routes done in commit e5a9206: ...
+01M3X8BWCA79ZPJRWBBHQ2JCE7  ticket.claim  impl-1
+01M3X8BWCA79ZPJRWBBHQ2JCE7  ticket.move  impl-1  status tests
+01M3X8BWCA79ZPJRWBBHQ2JCE7  ticket.move  impl-1  status implementing
+01M3X8BWCA79ZPJRWBBHQ2JCE7  ticket.handoff  impl-1  to ben  status review  note Pages and browser test done in commit e83d68a: ...
+01M3X8BWBKRRN85121SJETN3D5  ticket.move  ben  status merged
+01M3X8BWC0573VVVQS61BBRYVP  ticket.move  ben  status merged
+01M3X8BWCA79ZPJRWBBHQ2JCE7  ticket.move  ben  status merged
+01M3X8BWBKRRN85121SJETN3D5  ticket.close  ben
+01M3X8BWCA79ZPJRWBBHQ2JCE7  ticket.close  ben
+01M3X8BWC0573VVVQS61BBRYVP  ticket.close  ben
+```
+
+Read it top to bottom. Every ticket was created, claimed, moved through tests and implementing, and handed over. Nobody stopped silently. The last ticket to close is the one with the decision. It closed after the other two, because it had to wait for the design to be updated.
+
+The demo run was 7 commits, 9 of 9 tasks ticked, 6 browser scenarios passing, and nothing pushed. Three things in it are worth your attention.
+
+- **A gap was recorded, not silently fixed.** A link can still be created with the custom code `stats`, and its short URL is then shadowed by the new page. The agent did not quietly change link creation to forbid it. That is a change to what the system does, so it wrote the gap into `design.md` and left it for you to decide.
+- **The browser test caught a bug the unit tests could not.** The first browser run showed an empty stats page. The cause: `const top = ...` at the top level of a classic script collides with the non-configurable `window.top`. That is a SyntaxError, so the script never ran. No unit test sees that, because no unit test runs the page. The agent renamed the variable to `topRows` and left a comment saying why.
+- **A waiver was written down.** For ticket 1 the browser test was waived. No page, route or stylesheet changed, so gate 3 from act 3 did not apply, and the handoff note said so. That is a correct waiver: loud, with a reason, in the note you read. Tickets 2 and 3 ran the browser test, because a route and pages changed.
+
+## What you take into act 6
+
+You have a board, a change imported onto it, and one agent that works the tickets in order while you play the other roles. The work is still in one checkout, so two agents would collide in the files. Act 6 gives each ticket its own worktree and branch and merges them through pull requests. The board will find the same `.board/` from every one of them.
