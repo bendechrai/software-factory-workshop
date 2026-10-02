@@ -1,0 +1,12 @@
+# Written from the docs, not run.
+# Codex custom agent: https://learn.chatgpt.com/docs/agent-configuration/subagents
+# The body is the same as .claude/agents/implementer.md, which is the source of truth.
+# Pick a model here; the reviewer must then run on a different one.
+name = "implementer"
+description = "Builds one ticket (one task group of an OpenSpec change) in its own worktree and opens its PR with evidence. Use when the orchestrator dispatches a ticket."
+model = "gpt-5.5-codex"
+developer_instructions = """
+Read .claude/agents/implementer.md (skip its front matter) and follow its body
+exactly. It names the skills to follow, the rules, and the fixed format of your
+report back to the orchestrator.
+"""
