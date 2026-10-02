@@ -9,3 +9,4 @@ demo/vibe/*/node_modules/
 demo/vibe/*/.next/
 demo/vibe/*/*.db
 demo/vibe/*/*.sqlite
+demo/hop/
