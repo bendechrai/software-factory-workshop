@@ -21,8 +21,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 # 1. Secrets
 if command -v gitleaks >/dev/null 2>&1; then
-  gitleaks git --pre-commit --staged --redact --no-banner >/dev/null 2>&1 \
-    || gitleaks protect --staged --redact --no-banner \
+  gitleaks git --pre-commit --staged --redact --no-banner \
     || fail "gitleaks found something that looks like a secret in the staged changes"
   ok "gitleaks: no secrets in the staged changes"
 else

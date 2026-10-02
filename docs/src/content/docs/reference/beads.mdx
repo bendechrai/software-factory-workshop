@@ -1,0 +1,78 @@
+---
+title: Using beads instead of agentboard
+description: How to swap beads in for agentboard in act 5, and what bd init does to your repository. Checked on 1 October 2026.
+sidebar:
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Choose beads if you want a released tool that many people already use. It is Steve Yegge's tool, it stores issues in a Dolt database, and it keeps a dependency graph, so `bd ready` lists only the work that nothing is blocking. agentboard is the smaller, workshop-sized option. The act 5 flow works with either.
+
+<Aside type="caution">
+These commands were run while writing this guide, outside the demo repository. The demo app uses agentboard.
+</Aside>
+
+## Install
+
+```bash
+brew install beads          # or: npm install -g @beads/bd
+bd version
+```
+
+Install it globally. The hooks that beads writes call plain `bd`, so a project-only install does not work with them.
+
+## What bd init really does
+
+<Aside type="caution">
+`bd init` does much more than create `.beads/`. Read this before you run it in the demo repository.
+
+- It writes `AGENTS.md` and `CLAUDE.md`. A `CLAUDE.md` stops Claude Code reading `AGENTS.md` natively (see the [harnesses page](/software-factory-workshop/reference/harnesses/)), so delete it, or make its first line `@AGENTS.md`.
+- It writes Claude, Codex and Cursor hooks, and a skill.
+- It sets `core.hooksPath` to `.beads/hooks/`. That replaces this workshop's `.githooks`. Run `bd hooks install --chain` to keep both, or put things back with `git config core.hooksPath .githooks`.
+- It turns on anonymous metrics. Turn them off with `bd metrics off`.
+- It makes a git commit of 19 files.
+
+Try `bd init --stealth` first, which keeps the files out of the commit. Otherwise review what happened with `git show` straight after.
+</Aside>
+
+## The act 5 flow, agentboard to beads
+
+| Step | agentboard | beads |
+|---|---|---|
+| Bring in the tasks | `import-change` | No equivalent. Create one issue per task group: `bd create "<group title>" -t task --description "openspec:<change>#<n>"`. Use `bd dep add <issue> <depends-on>` for the order. |
+| Claim a ticket | claim | `bd update <id> --claim` |
+| Find work | list the open tickets | `bd ready` |
+| Comment or record a decision | comment | `bd comment <id> "<text>"` |
+| Hand off for review | handoff | `bd update <id> --status <status> --assignee <name>` |
+| Close | close | `bd close <id> --reason "<why>"` |
+| Sync | sync | `bd dolt push` and `bd dolt pull` |
+
+`bd sync` also exists. It pulls, checks for conflicts, and pushes the Dolt remote. With no remote it says so and exits 0.
+
+## Where the data lives
+
+- Issues are in an embedded Dolt database in `.beads/embeddeddolt/`. It is gitignored.
+- `.beads/issues.jsonl` is only an optional export. It is not the source of truth or a backup.
+- All git worktrees share one database, and issues are not tied to a branch. That suits act 6.
+- Across machines, `bd dolt push` stores the data under `refs/dolt/data` on your git remote. A fresh clone runs `bd bootstrap`.
+
+## Landing the plane
+
+`bd init` writes a closing ritual into `AGENTS.md`. It has five steps:
+
+1. File issues for remaining work.
+2. Run the quality gates.
+3. Update issue status.
+4. Handle git and sync, following the active profile.
+5. Hand off.
+
+The default profile is conservative. The agent does not commit, push or sync Dolt unless you ask. It reports `git status` and the commands it proposes. A team-maintainer profile, which you must opt into, runs `git pull --rebase` and `git push`.
+
+## Where this came from
+
+- beads: https://github.com/gastownhall/beads
+- Installation: https://github.com/gastownhall/beads/blob/main/docs/getting-started/installation.md
+- Sync and storage: https://github.com/gastownhall/beads/blob/main/docs/core-concepts/sync-concepts.md and https://github.com/gastownhall/beads/blob/main/docs/reference/git-integration.md
+- Worktrees: https://github.com/gastownhall/beads/blob/main/docs/reference/worktrees.md
+- Agent rules: https://github.com/gastownhall/beads/blob/main/AGENTS.md
