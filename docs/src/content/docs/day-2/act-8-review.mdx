@@ -1,0 +1,227 @@
+---
+title: "Act 8: review"
+description: The writer never grades its own work. A reviewer on a different model, with only the diff, the spec and a rubric you own, stands in front of the merge. A second vendor adds a second lens.
+sidebar:
+  order: 8
+  label: "Act 8: review"
+---
+
+import { Steps, Code, Tabs, TabItem } from '@astrojs/starlight/components';
+import rubric from '../../../../../templates/act-8/.agents/review/rubric.md?raw';
+import reviewer from '../../../../../templates/act-8/.agents/review/reviewer.md?raw';
+import challenger from '../../../../../templates/act-8/.agents/review/challenger.md?raw';
+
+**The idea.** The writer never grades its own work. A reviewer on a different model reads the diff, the spec and a rubric, and nothing else. It has no memory of writing the code. A second vendor goes further. Each vendor trains on different data and ends up with different weights, so each model brings a different lens to the same diff. And a rubric you own gets better every time something is missed. This is the "ship" station, and it is the place this workshop most disagrees with the popular version, where a paid review service is the gate. Read the position in [where this workshop differs](/software-factory-workshop/reference/where-we-differ/).
+
+**Time:** about 60 minutes.
+
+## The talk
+
+1. **Why a different model, and why a different vendor.** A model that wrote the code tends to agree with it. A reviewer on another model of the same vendor is a clear step up, and it is what you can do with one subscription. A reviewer from another vendor is a bigger step. Different training data and different weights mean different blind spots. The findings overlap, but not completely.
+2. **Two roles, two models.** A **reviewer** applies the rubric and gives a verdict and a score. A **challenger** argues against merging, and against the reviewer. In Ben's aviation project the reviewer is `openai/gpt-5.6-sol` and the challenger is `z-ai/glm-5.3`, both through OpenRouter. This workshop uses the same pair as its defaults. The challenger is told to test an earlier review as a claim, and to say where that review is right too.
+3. **Hold back.** Anthropic's guidance is that a reviewer told to find gaps will report some, even in sound work. So the reviewer prompt says only correctness, spec, tests and rubric findings block. Everything else is a NIT, and there are at most 3 of them. If nothing blocks, the verdict is PASS.
+4. **Test your reviewer before you trust it.** Plant a defect it should catch, in a PR you will close. If the reviewer misses it, fix the reviewer and the rubric before you point it at real work. A reviewer you have never seen fail is a reviewer you have never tested.
+5. **The review loop.** `CHANGES` sends the work back to implementing. The implementer fixes each blocking finding, shows the evidence again if behaviour changed, and asks for a re-review. At most 3 rounds. After round 3 a human takes over. On `PASS` the work goes to a human to merge. The implementer never merges its own PR.
+6. **Every miss becomes a Lessons line.** When a reviewer, a human or production finds something the rubric missed, one line goes into the rubric's Lessons section, in the PR that fixes it.
+7. **Log what each opinion costs.** The aviation project logs every OpenRouter call with the cost OpenRouter charged. Here the second-opinion script appends one line per call to a usage log, and the ledger can add it to the total.
+
+**Most attendees have one subscription.** So the baseline is an in-harness reviewer on a different model of the same vendor. In Claude Code that is a subagent with `model: sonnet` when the implementer is on opus. The other harnesses have the same idea, in the tabs below. Only Claude Code was run for this workshop. The other three files were written from the docs and are marked "Written from the docs, not run". The OpenRouter second opinion is optional. The presenter shows it, and it is written up below for anyone with a key.
+
+## The files
+
+Three prompt files, the same in every harness. The rubric is yours. It has ten checks and a Lessons section.
+
+<Code code={rubric} lang="md" title=".agents/review/rubric.md" />
+
+The reviewer reads the PR and the spec, applies the rubric and holds back. It does not read the implementer's conversation.
+
+<Code code={reviewer} lang="md" title=".agents/review/reviewer.md" />
+
+The challenger is only used for the second opinion. It has no tools, so everything it may use is sent in the message.
+
+<Code code={challenger} lang="md" title=".agents/review/challenger.md" />
+
+Each harness wires the reviewer in its own way. Pick a model that differs from the one that writes.
+
+<Tabs>
+  <TabItem label="Claude Code">
+    `.claude/agents/reviewer.md` with `model: sonnet` in its frontmatter. Run when the implementer is on opus. This is the one the demo run used.
+  </TabItem>
+  <TabItem label="Codex">
+    `.codex/agents/reviewer.toml` with a `model` that differs from the implementer's. The template names `gpt-5.5-codex`. Written from the docs, not run.
+  </TabItem>
+  <TabItem label="Gemini">
+    `.gemini/agents/reviewer.md`. The template names `gemini-2.5-pro`. Written from the docs, not run.
+  </TabItem>
+  <TabItem label="Cursor">
+    `.cursor/agents/reviewer.md`. The template names `gpt-5`. Written from the docs, not run.
+  </TabItem>
+</Tabs>
+
+There is also a `review-loop` skill, `.agents/skills/review-loop/SKILL.md`, that holds the loop above. Claude Code needs no extra wiring for it, because `.claude/skills` is already a link to `.agents/skills`. Add one line to `AGENTS.md`, in step 4 of the Workflow list:
+
+```text
+Every PR goes through the `review-loop` skill before a human merges it.
+```
+
+### The optional second opinion, through OpenRouter
+
+`bin/second-opinion.mjs` sends a PR to a model from another vendor and prints the result. Nothing is posted to GitHub. This is its help text from the demo run:
+
+```text
+Usage: node bin/second-opinion.mjs --pr <n> [--role review|challenge] [--against <file>] [--model <openrouter model id>] [--change <name>] [--out <file>]
+
+Reads pull request <n> with a non-Claude model through OpenRouter, using a
+role prompt, the rubric, the change's OpenSpec artifacts and gh pr diff <n>.
+Prints the result, writes it to --out if given, and appends one line of
+token use, cost and role to .agents/review/openrouter-usage.jsonl.
+
+Two roles, two different models:
+  review     (default) .agents/review/reviewer.md, default model openai/gpt-5.6-sol
+  challenge  .agents/review/challenger.md, default model z-ai/glm-5.3
+             Argues against merging and against any earlier review.
+             Same VERDICT and SCORE header, so results compare.
+
+  --pr <n>          pull request number (required)
+  --role <role>     review or challenge (default review)
+  --against <file>  challenge only: an earlier review to test and rebut
+  --model <id>      OpenRouter model id (default depends on --role)
+  --change <name>   OpenSpec change (default: the "Change:" line of the PR body)
+  --out <file>      also write the result to this file
+
+Needs OPENROUTER_API_KEY in the environment (exit 2 if unset) and gh.
+Nothing is posted to GitHub.
+```
+
+To use it:
+
+1. Make an account at [openrouter.ai](https://openrouter.ai), add a little credit, and create an API key there. A few review runs cost cents.
+2. Export the key in your shell for this session. Never write it into a file in the repo.
+
+   ```bash
+   export OPENROUTER_API_KEY=<your key>
+   ```
+
+3. Review a PR, then challenge it. The challenge reads the review as a claim to test.
+
+   ```bash
+   node bin/second-opinion.mjs --pr 5 --out /tmp/pr5-review.md
+   node bin/second-opinion.mjs --pr 5 --role challenge --against /tmp/pr5-review.md --out /tmp/pr5-challenge.md
+   ```
+
+4. Read the usage log. Each call appends one line to `.agents/review/openrouter-usage.jsonl`: the model, the prompt and completion tokens, the cost OpenRouter charged, the role and a timestamp. No key is in it.
+5. Feed the log to the ledger, so the opinion costs show up beside the Claude spend. See `tools/ledger/README.md` in the workshop repo.
+
+   ```bash
+   node tools/ledger/ledger.mjs --openrouter .agents/review/openrouter-usage.jsonl
+   ```
+
+## Hands-on
+
+You are the orchestrator. Use your `hop` repository from act 7. The fix PR from act 7 is open, and it is the real PR to review. It was PR #3 on the demo run.
+
+<Steps>
+
+1. **Copy the templates in.** Take everything under `templates/act-8/` from the workshop repo, keeping the paths, and add the `AGENTS.md` line above. The usage log, `.agents/review/openrouter-usage.jsonl`, is not a template. The first second-opinion run creates it. Run `npx eslint bin/second-opinion.mjs` and `node bin/second-opinion.mjs --help` to check the tool. Commit and push. On the demo run the pre-commit hook and the pre-push gate both passed.
+
+2. **Plant a calibration defect.** Branch from the fix PR's branch and add two changes the rubric covers and the tests cannot see. Both keep every test green. On the demo run this was PR #5, branch `fix/reserved-codes-g1-cal`, one commit titled "Make the reserved code refusal explicit at the API edge".
+
+   A layering violation, rubric check 6, in `src/routes/links.ts`. A new import, and a check in the POST handler just before `createLink`. The status and message match what the action already returns, so behaviour looks unchanged.
+
+   ```ts
+   import { RESERVED_CODES } from "../actions/reserved-codes.ts";
+
+   const requestedCode = field("code");
+   if (typeof requestedCode === "string" && RESERVED_CODES.includes(requestedCode.toLowerCase())) {
+     res.status(400).json({ error: `The code "${requestedCode}" is reserved for a page of hop. Choose another code.` });
+     return;
+   }
+   ```
+
+   Dead code, rubric check 7, appended to `src/actions/reserved-codes.ts`. An exported helper that nothing calls.
+
+   ```ts
+   export function isReservedCode(code: string): boolean {
+     return RESERVED_CODES.includes(code.toLowerCase());
+   }
+   ```
+
+   `npm run verify`, `npm run e2e` and the push gate all passed on the demo run. That is the point: the tests cannot see these two defects. Open the PR and do not merge it.
+
+3. **Run the in-harness reviewer on both PRs.** In Claude Code, start the `reviewer` agent, on Sonnet, with each PR number and the change name. Run each review on its own. The reviewer reads the PR, runs the tests in a throwaway worktree, writes the review and posts it with `gh pr review <n> --comment --body-file <file>`. It then comments the verdict on the board ticket.
+
+   ```bash
+   agentboard comment <ticket id> "Review of PR #<n>: VERDICT: <verdict>, SCORE: <n>/5, <k> blocking" --as reviewer
+   ```
+
+4. **Run the OpenRouter reviewer and challenger (optional).** The presenter does this live. Use the four commands from the section above, for both PRs, with the review saved and passed to `--against`.
+
+5. **Compare.** Put the six verdicts side by side. The next section has the demo run's table.
+
+6. **Close the planted PR.** It did its job. Close it without merging, with a comment that says why, then remove its branch and worktree. On the demo run the comment said it was a calibration PR with two planted defects.
+
+   ```bash
+   gh pr close 5 --comment "<why>"
+   ```
+
+7. **Record the lesson.** This is the teaching moment of the step. On the demo run the Claude reviewer and the GPT reviewer both caught the two planted defects, but neither noticed that the duplicate route guard changes which error wins on mixed bad input. Only the challenger did. A miss by two lenses, caught by a third, becomes a permanent line that every future review reads. This line went into the rubric's Lessons section:
+
+   ```text
+   - When the same rule is checked in two layers (for example a route and an action), ask which error wins on mixed bad input (an invalid URL plus a reserved code), and whether the tests would still pass if the authoritative check were deleted.
+   ```
+
+   On the demo run it was committed on main, in the same commit as the OpenRouter cost record.
+
+8. **Merge the real PR through the review loop.** Follow the `review-loop` skill. A `PASS` goes to the human, and you merge. A `CHANGES` goes back to implementing, for at most 3 rounds. This is how it went on the demo run:
+
+   - The challenger's NIT about the PR body's file list was fixed in the PR description.
+   - The branch was rebased onto main. That rewrote the "after" commit. Evidence must name a commit that is in the PR, so the after evidence was captured again on the new head (`d4291ff`, 10 ok, 0 failed, with identical screenshots) and the Evidence table was updated.
+   - The PR was squash-merged as `0547bdd`.
+   - `agentboard close-merged` first closed nothing, because the ticket was still in review. The output was `close-merged: 0 closed, 0 unmerged, 0 skipped`. After `agentboard move <id> merged` it closed the ticket.
+
+     ```text
+     close-merged: 1 closed, 0 unmerged, 0 skipped
+     ```
+
+   - The `reserved-codes` change was archived. That created a new `custom-codes` main spec.
+
+9. **Tag.**
+
+   ```bash
+   git tag act-8
+   ```
+
+</Steps>
+
+## What you see
+
+Six reviews, two PRs. PR #3 is the real fix. PR #5 is the planted one, with two defects.
+
+| Reviewer | PR #3 verdict and score | PR #3 cost | PR #5 verdict and score | PR #5 cost |
+| --- | --- | --- | --- | --- |
+| Claude Sonnet reviewer (in-harness) | PASS, 5/5 | In the subscription | CHANGES, 3/5, 3 blocking | In the subscription |
+| GPT-5.6 Sol reviewer (OpenRouter) | PASS, 5/5 | $0.0330 | CHANGES, 3/5, 2 blocking | $0.0375 |
+| GLM 5.3 challenger (OpenRouter) | PASS, 5/5, 2 NITs | $0.0997 | CHANGES, 3/5, 1 blocking | $0.0907 |
+
+The Claude cost came out of the subscription. It is visible in the ledger, so there is no dollar figure here that I made up. The four OpenRouter runs cost $0.26 in total ($0.2610 before rounding).
+
+What each lens saw, and the others did not:
+
+- **Claude (Sonnet)** caught both planted defects. It also caught an evidence mismatch on PR #5: the planted commit changed API behaviour after the evidence was captured, so the PR body named commits that were no longer the head, and the image links pointed at PR #3's branch. It did not stop at reading. It ran the tests with the route check reverted and showed that they still passed, so the duplicate check was untested. On PR #3 it restored main's `create-link.ts` and showed 2 tests failing, so the tests do fail without the fix.
+- **GPT-5.6 Sol** caught both planted defects, the duplicate route guard and the unused `isReservedCode`, for about 3 to 4 cents a run.
+- **GLM 5.3** noticed two things nobody else did. The duplicate guard changes which error wins on mixed bad input: an invalid URL plus a reserved code now returns the reserved message, not the URL error the action guarantees. And the guard lets the route tests pass even if the action's check were deleted. It also disagreed with the reviewer's severity: it called the unused export a NIT, not a blocker, since it changes no behaviour. On PR #3 the challenger found two NITs everyone else missed. The route-mount half of the reserved list (`api`, `stats`) has no guard beyond a comment. And the PR body's list of `public/` files left out `stats`.
+
+The challenger used about 18 times as many completion tokens as the reviewer (17k to 19k, against 0.7k to 1.1k). It cost about three times as much per run.
+
+The honest framing: no single reviewer saw everything. That is the argument for more than one lens. It also matches the published finding that most review findings are unique to one tool, the same one cited in [where this workshop differs](/software-factory-workshop/reference/where-we-differ/).
+
+### An aside: the calibration that failed
+
+The first calibration attempt used Haiku to plant the defect. It could not find a behaviour defect that slipped past the tests. Every one it tried broke a test. So it opened a PR with a harmless refactor and described it misleadingly. That PR, #4, was closed. Two lessons came out of it.
+
+- **The tests already guarded the behaviour well.** So aim calibration defects at what the rubric covers and the tests cannot see: layering, dead code, scope, evidence. That is what PR #5 does.
+- **Pick a model that fits the judgement the task needs.** Planting a defect that slips past a good test suite is a hard judgement call. It is not grunt work.
+
+## What you take into act 9
+
+The fix PR has been reviewed by a model that did not write it, and merged through the review loop. The rubric is yours and it has a place to grow. Every PR from now on goes through the loop, and a miss becomes a line. You also have a rough price for a second opinion: cents per run, logged. The factory now builds, proves and reviews.

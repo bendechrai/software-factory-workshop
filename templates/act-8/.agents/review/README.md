@@ -11,6 +11,7 @@ a line in the rubric, so the reviewer gets better at reviewing this code.
 |---|---|
 | `rubric.md` | The numbered checks, plus Lessons learned from misses |
 | `reviewer.md` | The reviewer's instructions. Any harness can load it |
+| `challenger.md` | The challenger's instructions: argue against merging and against an earlier review |
 | `../skills/review-loop/SKILL.md` | What the implementer does with a review, and the 3-round limit |
 | `.claude/agents/reviewer.md` | Claude Code subagent that loads `reviewer.md` |
 | `.codex/agents/reviewer.toml`, `.gemini/agents/reviewer.md`, `.cursor/agents/reviewer.md` | The same for Codex, Gemini CLI and Cursor. Written from the docs, not run |
@@ -45,16 +46,34 @@ agent -p "Use the reviewer subagent to review PR 3, change reserved-codes"
 The reviewer posts with `gh pr review <n> --comment` and comments the
 verdict on the ticket as `reviewer`.
 
+## Two roles
+
+`bin/second-opinion.mjs --role review|challenge` runs one of two roles, and
+they run on different models on purpose. Different vendors train on
+different data with different weights, so they bring different lenses: what
+one model finds ordinary, another finds odd. The reviewer (default
+`openai/gpt-5.6-sol`) judges the PR against the rubric. The challenger
+(default `z-ai/glm-5.3`, `challenger.md`) exists to disagree: it looks for
+what a reviewer would miss or wrongly pass, makes the strongest case
+against merging, and says plainly where an earlier review is wrong. Give it
+that review with `--against <file>`. Both print the same `VERDICT` and
+`SCORE` lines, so the two results compare.
+
+```
+node bin/second-opinion.mjs --pr 3 --role review --out review.md
+node bin/second-opinion.mjs --pr 3 --role challenge --against review.md --out challenge.md
+```
+
 ## Second opinion through OpenRouter (optional)
 
 ```
 export OPENROUTER_API_KEY=...        # never commit it, never put it in a file here
-node bin/second-opinion.mjs --pr 3 [--model openai/gpt-5.6-sol] [--change reserved-codes] [--out review.md]
+node bin/second-opinion.mjs --pr 3 [--role review|challenge] [--against review.md] [--model openai/gpt-5.6-sol] [--change reserved-codes] [--out review.md]
 ```
 
 It sends `reviewer.md`, the rubric, `AGENTS.md`, `DEFINITION_OF_DONE.md`,
 the PR body, the change's OpenSpec files and `gh pr diff` to one model,
-prints the review and appends tokens and cost to `openrouter-usage.jsonl`.
+prints the review and appends tokens, cost and role to `openrouter-usage.jsonl`.
 It posts nothing; paste it into the PR yourself if it earns it. Add the
 cost to the workshop ledger with
 `node tools/ledger/ledger.mjs --openrouter <this repo>/.agents/review/openrouter-usage.jsonl`.

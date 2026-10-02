@@ -36,3 +36,4 @@ add one line here in the same PR that fixes it.
 - An implementer once wrote tests and code in one pass and only proved the
   red state afterwards. Ask how the failing state was observed, and check
   the PR body or commits show it.
+- When the same rule is checked in two layers (for example a route and an action), ask which error wins on mixed bad input (an invalid URL plus a reserved code), and whether the tests would still pass if the authoritative check were deleted.
