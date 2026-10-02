@@ -44,7 +44,7 @@ check "drains 3 tickets, then exits 0 with 'board empty' after 3 harness calls" 
 lines=$(awk 'END { print NR }' "$T/.agents/loop/loop.log")
 check "logs one loop.log line and one runs/ file per iteration" \
   '(( lines == 3 )) && [ "$(ls "$T/.agents/loop/runs"/*.json | wc -l)" -eq 3 ]'
-check "prints the ledger cost hint" 'has "ledger.mjs. --since"'
+check "a non-Claude harness does not print the ledger hint" '! has "ledger.mjs"'
 
 setup 3; FAKE_MODE=noop MAX_ITERATIONS=2 run_loop
 check "stops at MAX_ITERATIONS with noop (2 calls, exit 0)" \
@@ -119,6 +119,32 @@ chmod +x "$T/stub/curl"
 PATH="$T/stub:$PATH" OPENROUTER_API_KEY=sk-test CODEX_HOME="$T/no-such" run_loop
 check "with a key: loop.log has openrouter usage before and after, and no key or label" \
   'grep -q "openrouter_before: usage=1.5 limit_remaining=null openrouter_after: usage=1.5" "$T/.agents/loop/loop.log" && ! grep -q "sk-test\|secret-label" "$T/.agents/loop/loop.log"'
+
+# Cost hint branches: claude harness, non-Claude with OpenRouter usage, non-Claude without.
+setup 2; mkdir -p "$T/stub"
+printf '#!/bin/sh\nexec bash "%s/bin/fake-harness.sh" "$@"\n' "$T" > "$T/stub/claude"; chmod +x "$T/stub/claude"
+PATH="$T/stub:$PATH" FAKE_MODE=noop MAX_ITERATIONS=1 HARNESS_CMD="claude -p" run_loop
+check "claude harness: prints the ledger cost hint" 'has "ledger.mjs. --since" && ! has "OpenRouter spend"'
+echo "      hint: $(grep 'ledger.mjs' <<< "$OUT" | head -n 1)"
+
+setup 2; FAKE_MODE=noop MAX_ITERATIONS=2
+mkdir -p "$T/stub"
+cat > "$T/stub/curl" <<'STUB'
+#!/bin/sh
+n=$(cat "$0.n" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$0.n"
+echo "{\"data\":{\"usage\":$((n + 1)).25,\"limit_remaining\":null}}"
+STUB
+chmod +x "$T/stub/curl"
+echo 'iteration=9 openrouter_before: usage=100 openrouter_after: usage=900' > "$T/.agents/loop/loop.log"
+PATH="$T/stub:$PATH" OPENROUTER_API_KEY=sk-test CODEX_HOME="$T/no-such" run_loop
+check "non-Claude with usage lines: prints first, last and the difference, from this loop only" \
+  'has "OpenRouter spend of this loop: first usage .2.25, last usage .5.25, difference .3.0000" && ! has "ledger.mjs"'
+echo "      hint: $(grep 'OpenRouter spend' <<< "$OUT")"
+
+setup 2; FAKE_MODE=noop MAX_ITERATIONS=1 CODEX_HOME="$T/no-such" run_loop
+check "non-Claude without usage lines: says the cost is not visible to the ledger" \
+  'has "not visible to the ledger; check the provider" && ! has "ledger.mjs"'
+echo "      hint: $(grep 'not visible' <<< "$OUT")"
 
 echo; echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

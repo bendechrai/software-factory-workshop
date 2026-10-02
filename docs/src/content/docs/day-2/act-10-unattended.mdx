@@ -36,7 +36,7 @@ import codexConfig from '../../../../../templates/act-10/.agents/loop/codex-conf
 
 5. **The two-tier rule.** This comes from the author's holodeck project. Never make the factory the only way to change the factory. The loop, the skill and the board are the fast path. The manual path must keep working beside them. A person can edit, run `npm run verify`, commit and push with no agent and no loop. So the loop changes product code through tickets and PRs, and changes to the loop itself are made by a person.
 
-6. **Cost.** An unattended loop is where cost gets away from you. Claude Code has a per-run budget flag, `--max-budget-usd`, and the default command uses it with a budget of $5 a run. The other harnesses have no such flag in this loop, so the iteration and time caps are your only control: keep `MAX_ITERATIONS` small. The Claude ledger reads Claude Code logs only. It cannot see Codex or OpenRouter spend. With Claude Code, the loop prints the ledger command for its own time window, and you run it. With Codex, read the OpenRouter usage lines the loop writes to `loop.log`.
+6. **Cost.** An unattended loop is where cost gets away from you. Claude Code has a per-run budget flag, `--max-budget-usd`, and the default command uses it with a budget of $5 a run. The other harnesses have no such flag in this loop, so the iteration and time caps are your only control: keep `MAX_ITERATIONS` small. The Claude ledger reads Claude Code logs only. It cannot see Codex or OpenRouter spend. With Claude Code, the loop prints the ledger command for its own time window, and you run it. With any other harness and `OPENROUTER_API_KEY` set, the loop prints the OpenRouter spend of this loop itself, worked out from the usage lines it writes to `loop.log`.
 
 ## The files
 
@@ -44,7 +44,7 @@ The prompt is two short paragraphs. The first sends the session to the orchestra
 
 <Code code={loopPrompt} lang="md" title=".agents/loop/prompt.md" />
 
-The loop is one bash script. It checks the guards before every iteration, runs the harness with the prompt as the last argument, writes a log line, and prints the ledger hint when it ends.
+The loop is one bash script. It checks the guards before every iteration, runs the harness with the prompt as the last argument, writes a log line, and prints a cost hint when it ends: the ledger command for Claude Code, the OpenRouter spend for other harnesses.
 
 <Code code={loopScript} lang="bash" title="bin/factory-loop.sh" />
 
@@ -82,7 +82,7 @@ Use your `hop` repository from act 9.
    bash bin/factory-loop.test.sh
    ```
 
-   You should see 19 lines that start with PASS, and `19 passed, 0 failed` at the end. They are listed in the next section.
+   You should see 22 lines that start with PASS, and `22 passed, 0 failed` at the end. They are listed in the next section.
 
 5. **Propose a small change and import its tickets.** Pick something small, such as a tiny addition to the home page. Use the `openspec-propose` flow, run `openspec validate <change> --strict`, then `agentboard import-change <change> --as orch`. Keep it to one or two task groups. You own the spec, as in act 9.
 
@@ -185,7 +185,7 @@ Use your `hop` repository from act 9.
 
    The run in progress finishes, and the loop ends before the next one. Remove the file afterwards: `rm .agents/loop/STOP`. If a run was cut off by Ctrl-c, run `agentboard health` to find tickets left claimed.
 
-8. **Read the cost.** With Codex, the Claude ledger cannot see the spend (see the cost note below). Read the OpenRouter usage lines in `.agents/loop/loop.log`: the difference between the before and after values is the run's cost. With Claude Code, run the ledger for the loop window. The loop printed the command when it ended. Run it from your `hop` folder (for example `~/workshop/hop`), with the loop's start time. The ledger finds the project from the current folder.
+8. **Read the cost.** With Codex, the Claude ledger cannot see the spend (see the cost note below). The loop prints the OpenRouter spend when it ends: the first and last usage figures from this loop's lines in `.agents/loop/loop.log`, and their difference. Without `OPENROUTER_API_KEY` it says the cost is not visible to the ledger, and you check the provider's own usage page. With Claude Code, run the ledger for the loop window. The loop printed the command when it ended. Run it from your `hop` folder (for example `~/workshop/hop`), with the loop's start time. The ledger finds the project from the current folder.
 
    ```bash
    node ../software-factory-workshop/tools/ledger/ledger.mjs --since <ISO time the loop started> --by agent
@@ -259,11 +259,11 @@ A separate verifier checked the run strictly afterwards, on a different model, f
 | That reviewer cannot read images | On PR #10 it failed twice with "No endpoints found that support image input" and posted nothing. | The reviewer is now `anthropic/claude-sonnet-5.5`, which takes images (`templates/act-10/.codex/agents/reviewer.toml`) |
 | The orchestrator swapped reviewers on its own | For PRs #10 and #11 it chose OpenAI reviewers itself: a different model, but the same vendor as the implementer, and not the configured agent. | If the configured reviewer fails twice, block the ticket for a human and never pick another (`prompt.md`, `SKILL.md` step 7) |
 | Nobody looked at a screenshot | The orchestrator checked pixel sizes only, yet wrote that the evidence "clearly shows" the fix. The fallback reviewers also said they had not inspected the images. | Open every evidence image and describe it in a ticket comment before accepting it (`SKILL.md` step 6, `prompt.md`) |
-| One spec scenario merged untested, and a cap changed without a word | The scenario "a long destination with a short label shows well beyond 240px" had no test. The tag cap was 55% where the design said 60%, and the PR did not say so. | Fixed by hand in PR #12, below. No template change. Add a rubric rule that a spec scenario with no test is a change request, not a nit. |
+| One spec scenario merged untested, and a cap changed without a word | The scenario "a long destination with a short label shows well beyond 240px" had no test. The tag cap was 55% where the design said 60%, and the PR did not say so. | Fixed by hand in PR #12, below. A new Lessons line in `.agents/review/rubric.md` (`demo/hop`, and `templates/act-9/.agents/review/rubric.md`) makes a spec scenario with no test, or a design decision changed without a note in the PR, BLOCKING, not a NIT. |
 | Backticks in a shell string ran as commands | With the sandbox off, markdown inside a quoted `gh pr create --body` string was executed by the shell. | Write PR bodies to a file and use `--body-file` (`templates/act-9/.claude/agents/implementer.md`, the evidence skill) |
 | Screenshot links went dead | All three PR bodies linked to branches that the squash merge deleted, so the images returned 404. | After the merge, rewrite each image link to the merge commit and check it returns 200 (`SKILL.md` step 9). The three loop PRs were repointed by hand. |
 | The run record lacked models and spawns | The run JSON shows no spawn calls and no model names. Only `~/.codex-loop` did. | The loop copies the session files of each iteration into `runs/<run>-sessions/` (`templates/act-10/bin/factory-loop.sh`) |
-| The cost hint showed $0 | The printed hint points at the Claude ledger. The run cost about $4.73 on OpenRouter. | The loop writes OpenRouter usage lines to `loop.log`, and the orchestrator reports cost from them (`factory-loop.sh`, `SKILL.md` step 13, `prompt.md`) |
+| The cost hint showed $0 | The printed hint points at the Claude ledger. The run cost about $4.73 on OpenRouter. | The loop writes OpenRouter usage lines to `loop.log`, and the orchestrator reports cost from them (`factory-loop.sh`, `SKILL.md` step 13, `prompt.md`). The hint now prints the ledger command only for a `claude` harness. For any other harness it prints the OpenRouter spend of the loop (first and last usage and the difference), or says the cost is not visible to the ledger. |
 | Implementers started with the orchestrator's whole context | All three were spawned with `fork_turns: "all"`, so they inherited "You are the orchestrator" and a long history. | Spawn them with a fresh context and pass the brief only (`SKILL.md` step 5, `prompt.md`) |
 
 ### The follow-up, PR #12
@@ -287,7 +287,7 @@ After the run, the verifier checked main (commit `014d6fd`) without changing any
 |---|---|---|
 | 1 | PASS | drains 3 tickets, then exits 0 with 'board empty' after 3 harness calls |
 | 2 | PASS | logs one `loop.log` line and one `runs/` file per iteration |
-| 3 | PASS | prints the ledger cost hint |
+| 3 | PASS | a non-Claude harness does not print the ledger hint |
 | 4 | PASS | stops at `MAX_ITERATIONS` with noop (2 calls, exit 0) |
 | 5 | PASS | stops on the STOP file the harness created (1 call, exit 0) |
 | 6 | PASS | does not start at all when STOP already exists (0 calls) |
@@ -304,8 +304,11 @@ After the run, the verifier checked main (commit `014d6fd`) without changing any
 | 17 | PASS | no sessions folder: copy is a no-op (no -sessions folder, exit 0) |
 | 18 | PASS | a session file written during the iteration is copied, an older one is not |
 | 19 | PASS | with a key: `loop.log` has openrouter usage before and after, and no key or label |
+| 20 | PASS | claude harness: prints the ledger cost hint |
+| 21 | PASS | non-Claude with usage lines: prints first, last and the difference, from this loop only |
+| 22 | PASS | non-Claude without usage lines: says the cost is not visible to the ledger |
 
-The last line was `19 passed, 0 failed`. `shellcheck bin/*.sh` also reported nothing. These are the fake harness results, not the real run above.
+The last line was `22 passed, 0 failed`. `shellcheck bin/*.sh` also reported nothing. These are the fake harness results, not the real run above.
 
 ### What this teaches
 
@@ -326,12 +329,18 @@ An unattended run is only as good as what verifies it afterwards. Here a separat
 - `.agents/loop/runs/<timestamp>-i<n>.json` holds the harness output of each run, with `.err` beside it for stderr.
 - `.agents/loop/runs/<timestamp>-i<n>-sessions/` holds a copy of the harness's own session files from that iteration. For Codex these are the rollouts, which are the only record of each subagent and its model.
 - `.agents/loop/loop.log` has one line per iteration: the iteration number, the start and end times, the exit code, and the open tickets before and after. With `OPENROUTER_API_KEY` set, it also has a line with `usage` and `limit_remaining` before and after each iteration. The key itself is never logged. This is the cost record for a Codex run.
-- When the loop ends it prints the cost hint. It points at the Claude ledger, so for a Codex run it shows $0. Use the OpenRouter lines instead:
+- When the loop ends it prints the cost hint. If `HARNESS_CMD` starts with `claude`, it points at the Claude ledger. For any other harness, such as Codex, it prints the OpenRouter spend from this loop's usage lines, or says the cost is not visible to the ledger when there are none. For Claude Code the hint looks like this:
 
   ```text
   [factory-loop] cost of this loop (run from the repo; put CLAUDE_CONFIG_DIR=~/.claude-workshop in front if you use the sandbox):
   [factory-loop]   cd <your repo>
   [factory-loop]   node "<workshop>/tools/ledger/ledger.mjs" --since <loop start> --by agent
+  ```
+
+  For Codex with `OPENROUTER_API_KEY` set:
+
+  ```text
+  [factory-loop] OpenRouter spend of this loop: first usage $2.25, last usage $5.25, difference $3.0000
   ```
 
 `runs/`, `STOP`, `loop.log`, `.ledger-cache.json` and `.agents/review/briefs/` are gitignored.

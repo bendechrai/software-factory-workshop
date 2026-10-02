@@ -38,3 +38,4 @@ add one line here in the same PR that fixes it.
   the PR body or commits show it.
 - When the same rule is checked in two layers (for example a route and an action), ask which error wins on mixed bad input (an invalid URL plus a reserved code), and whether the tests would still pass if the authoritative check were deleted.
 - A label tag passed every text check while a long destination pushed it out of a clipped cell. For anything shown inside a cell with overflow hidden, ask whether a test uses long input and checks the element is visible and inside its box, not only that its text matches.
+- In the first real unattended run, a spec scenario was merged with no test and a design value was changed (60% to 55%) without saying so; the reviewer called both NITs. A spec scenario with no test, or a design decision changed without a note in the PR, is BLOCKING, not a NIT.

@@ -137,10 +137,27 @@ check_guards() {
   return 1
 }
 
+# Lines already in loop.log before this loop started, so the hint only reads this loop's.
+LOG_LINES_AT_START=$(awk 'END { print NR + 0 }' "$LOG_FILE" 2>/dev/null || echo 0)
+
 cost_hint() {
-  say "cost of this loop (run from the repo; put CLAUDE_CONFIG_DIR=~/.claude-workshop in front if you use the sandbox):"
-  say "  cd $ROOT"
-  say "  node \"$WORKSHOP_DIR/tools/ledger/ledger.mjs\" --since $START_ISO --by agent"
+  local first last
+  case "$HARNESS_CMD" in
+    claude*)
+      say "cost of this loop (run from the repo; put CLAUDE_CONFIG_DIR=~/.claude-workshop in front if you use the sandbox):"
+      say "  cd $ROOT"
+      say "  node \"$WORKSHOP_DIR/tools/ledger/ledger.mjs\" --since $START_ISO --by agent" ;;
+    *)
+      first=$(tail -n +$((LOG_LINES_AT_START + 1)) "$LOG_FILE" 2>/dev/null \
+        | sed -n 's/.*openrouter_before: usage=\([0-9.]*\).*/\1/p' | head -n 1)
+      last=$(tail -n +$((LOG_LINES_AT_START + 1)) "$LOG_FILE" 2>/dev/null \
+        | sed -n 's/.*openrouter_after: usage=\([0-9.]*\).*/\1/p' | tail -n 1)
+      if [ -n "$first" ] && [ -n "$last" ]; then
+        say "OpenRouter spend of this loop: first usage \$$first, last usage \$$last, difference \$$(awk -v a="$first" -v b="$last" 'BEGIN { printf "%.4f", b - a }')"
+      else
+        say "this harness's cost is not visible to the ledger; check the provider's own usage page"
+      fi ;;
+  esac
 }
 
 if [ "$DRY_RUN" = 1 ]; then
