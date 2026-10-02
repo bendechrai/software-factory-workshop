@@ -48,6 +48,10 @@ Environment (defaults):
   MAX_MINUTES     wall-clock limit for the whole loop, decimals allowed (120)
   SLEEP_SECONDS   cool-down between iterations (30)
   MAX_FAILURES    stop after this many failed harness runs in a row (3)
+  CODEX_HOME      Codex state folder; its sessions/ files touched during an iteration are
+                  copied to .agents/loop/runs/ (nothing happens if the folder is missing)
+  OPENROUTER_API_KEY  when set, usage and limit_remaining are logged to loop.log before
+                  and after each iteration (the key itself is never logged)
   WORKSHOP_DIR    workshop checkout, for the cost hint (../software-factory-workshop from the repo)
 
 Stop it: touch .agents/loop/STOP
@@ -88,6 +92,30 @@ BLOCKED_PREV=""     # blocked tickets after the previous iteration
 BLOCKED_PREV_2=""   # and after the one before that
 failures=0
 iteration=0
+
+# OpenRouter key usage as "usage=<n> limit_remaining=<n>", or nothing when
+# OPENROUTER_API_KEY is unset. Only those two fields are logged, never the key.
+openrouter_usage() {
+  [ -n "${OPENROUTER_API_KEY:-}" ] || return 0
+  command -v jq >/dev/null 2>&1 || { echo "usage=unavailable (jq missing)"; return 0; }
+  curl -s -m 20 -H "Authorization: Bearer $OPENROUTER_API_KEY" https://openrouter.ai/api/v1/key 2>/dev/null \
+    | jq -r '.data | "usage=\(.usage) limit_remaining=\(.limit_remaining)"' 2>/dev/null \
+    || echo "usage=unavailable"
+}
+
+# Copies the harness's own session files that changed since the marker file
+# was touched into <run>-sessions/. For Codex these are the rollouts under
+# $CODEX_HOME/sessions (they hold every subagent thread and its model). A
+# no-op when that folder does not exist (other harnesses).
+copy_sessions() {
+  local marker=$1 dest=$2 src="${CODEX_HOME:-$HOME/.codex}/sessions" f rel
+  [ -d "$src" ] || return 0
+  while IFS= read -r f; do
+    rel=${f#"$src"/}
+    mkdir -p "$dest/$(dirname "$rel")" && cp "$f" "$dest/$rel"
+  done < <(find "$src" -type f -newer "$marker" 2>/dev/null)
+  return 0
+}
 
 # Prints a reason and returns 0 when the loop must end; sets EXIT_CODE.
 check_guards() {
@@ -145,6 +173,9 @@ while true; do
   before=$(open_ids | count_lines)
   started=$(stamp)
   run_file="$RUNS_DIR/$(date -u +%Y%m%dT%H%M%SZ)-i$iteration.json"
+  marker="$RUNS_DIR/.marker-i$iteration"
+  : > "$marker"
+  usage_before=$(openrouter_usage)
   say "iteration $iteration: $before open tickets, output in $run_file"
 
   "${HARNESS[@]}" "$PROMPT" </dev/null > "$run_file" 2> "$run_file.err"
@@ -152,6 +183,12 @@ while true; do
 
   after=$(open_ids | count_lines)
   echo "iteration=$iteration start=$started end=$(stamp) exit=$code open_before=$before open_after=$after" >> "$LOG_FILE"
+  usage_after=$(openrouter_usage)
+  if [ -n "$usage_before$usage_after" ]; then
+    echo "iteration=$iteration openrouter_before: $usage_before openrouter_after: $usage_after" >> "$LOG_FILE"
+  fi
+  copy_sessions "$marker" "${run_file%.json}-sessions"
+  rm -f "$marker"
   say "iteration $iteration finished: exit $code, $after open tickets"
 
   # A failed run is logged and the loop carries on; MAX_FAILURES ends a streak.

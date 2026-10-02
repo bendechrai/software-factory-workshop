@@ -92,5 +92,33 @@ setup 2; FAKE_MODE=noop MAX_ITERATIONS=1 HARNESS_CMD="bash $T/bin/fake-harness.s
 check "a multi-word HARNESS_CMD with -C <path> passes every word, then the prompt last" \
   'grep -q "args=5" "$FAKE_LOG.in" && grep -q "prompt=You are the orchestrator" "$FAKE_LOG"'
 
+# No key: no usage line. No sessions folder: nothing copied, loop still fine.
+setup 2; FAKE_MODE=noop MAX_ITERATIONS=1 CODEX_HOME="$T/no-such-codex-home" run_loop
+check "no OPENROUTER_API_KEY: no usage line in loop.log" \
+  '(( CODE == 0 )) && ! grep -q openrouter "$T/.agents/loop/loop.log"'
+check "no sessions folder: copy is a no-op (no -sessions folder, exit 0)" \
+  '! ls -d "$T/.agents/loop/runs"/*-sessions >/dev/null 2>&1'
+
+# Sessions touched during the iteration are copied; older ones are not.
+setup 2; FAKE_MODE=noop MAX_ITERATIONS=1
+mkdir -p "$T/codex/sessions/2026/10/02"; echo old > "$T/codex/sessions/2026/10/02/old.jsonl"
+touch -t 202001010000 "$T/codex/sessions/2026/10/02/old.jsonl"
+printf '#!/bin/sh\necho new > "%s/codex/sessions/2026/10/02/new.jsonl"\nexec bash "%s/bin/fake-harness.sh" "$@"\n' "$T" "$T" > "$T/wrap.sh"
+HARNESS_CMD="sh $T/wrap.sh" CODEX_HOME="$T/codex" run_loop
+check "a session file written during the iteration is copied, an older one is not" \
+  'find "$T/.agents/loop/runs" -name new.jsonl | grep -q . && ! find "$T/.agents/loop/runs" -name old.jsonl | grep -q .'
+
+# With a key and a stub curl, usage and limit_remaining are logged, nothing else.
+setup 2; FAKE_MODE=noop MAX_ITERATIONS=1
+mkdir -p "$T/stub"
+cat > "$T/stub/curl" <<'STUB'
+#!/bin/sh
+echo '{"data":{"usage":1.5,"limit":null,"limit_remaining":null,"label":"secret-label"}}'
+STUB
+chmod +x "$T/stub/curl"
+PATH="$T/stub:$PATH" OPENROUTER_API_KEY=sk-test CODEX_HOME="$T/no-such" run_loop
+check "with a key: loop.log has openrouter usage before and after, and no key or label" \
+  'grep -q "openrouter_before: usage=1.5 limit_remaining=null openrouter_after: usage=1.5" "$T/.agents/loop/loop.log" && ! grep -q "sk-test\|secret-label" "$T/.agents/loop/loop.log"'
+
 echo; echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

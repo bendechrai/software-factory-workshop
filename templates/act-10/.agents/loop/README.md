@@ -88,6 +88,13 @@ merges around those gates and never uses `--no-verify`.
 
 All three of `runs/`, `STOP` and `loop.log` are gitignored.
 
+Each iteration also copies the harness's own session files that changed
+during it into `runs/<run>-sessions/` (Codex: `$CODEX_HOME/sessions`; nothing
+happens if that folder does not exist), because the run JSON does not record
+subagents or models. With `OPENROUTER_API_KEY` set, `loop.log` gets a line
+with `usage` and `limit_remaining` before and after each iteration, which is
+the cost record for a Codex run (the ledger reads Claude Code logs only).
+
 When the loop ends it prints the ledger command for its time window:
 
 ```

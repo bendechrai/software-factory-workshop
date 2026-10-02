@@ -73,6 +73,11 @@ from whatever it was.
    Report back in the format in .claude/agents/implementer.md, nothing else.
    ```
 
+   Codex note: spawn the implementer with a fresh context, not yours. Do
+   not use `fork_turns: "all"` (it hands the implementer your whole
+   conversation, including "you are the orchestrator", and costs tokens).
+   Pass `fork_turns: "none"` and send the brief above as the only message.
+
    For a send-back (step 8) add: `This is review round <k>. Fix these findings: <findings>. Push to the same branch.`
 
 6. **Verify the report yourself.** A report is a claim. Check each line
@@ -95,7 +100,12 @@ from whatever it was.
    - The PR body has a `## Evidence` table whose short shas match
      `shortCommit` in `evidence/<change>/g<g>/before.json` and `after.json`,
      and the after record has every step `ok: true`. `ok: true` is not
-     enough: read the actual values and look at the screenshots. An
+     enough: read the actual values and look at the screenshots.
+     Open each evidence PNG with your image-reading tool (Codex:
+     `view_image`) and describe what it shows (what is visible, what is
+     clipped or missing, how before differs from after) in a ticket comment
+     before you accept the evidence. Pixel sizes and file metadata are not a
+     check, and "clearly shows" without looking is a failed verify. An
      `expectText` is a substring match, and a step file with no wait after a
      submit can race and drop a row while every step still passes.
    - Every waiver is written as `Waived: <gate> - <reason>` and the reason
@@ -105,18 +115,45 @@ from whatever it was.
    If any check fails, it is a send-back (step 8), not a review. Record it:
    `agentboard comment <id> "Verify failed: <what and how it was seen>" --as orch`.
 
-7. **Review on a different model.** Dispatch a reviewer subagent with model
-   `opus` (or a model that differs from the implementer's) and this prompt:
+7. **Review on a different model.** Do not rely on the spawn message
+   reaching the reviewer: a reviewer on a non-OpenAI model through Codex
+   gets an empty message. Write the brief to a file and to the ticket first.
+   The file is `.agents/review/briefs/pr-<n>.md` in the main checkout (the
+   folder is gitignored) and holds the PR number, the change name, the head
+   sha to review, what changed and what to read (the spec deltas, the
+   evidence folder, your screenshot notes from step 6):
+   ```
+   mkdir -p .agents/review/briefs
+   cat > .agents/review/briefs/pr-<n>.md <<'EOF'
+   PR: #<n>
+   Change: <change>
+   Head: <headRefOid>
+   What changed: <one or two sentences>
+   Read: openspec/changes/<change>/ (design.md, tasks.md, specs/), evidence/<change>/g<g>/
+   Do not read any implementer notes.
+   EOF
+   agentboard comment <id> "Reviewer brief for PR #<n>: change <change>, head <headRefOid>, see .agents/review/briefs/pr-<n>.md" --as orch
+   ```
+   Then dispatch the configured reviewer agent (Claude Code: `reviewer`,
+   model `opus`; Codex: the `reviewer` agent in `.codex/agents/`) with this
+   prompt:
 
    ```
-   You are actor reviewer. Read .agents/review/reviewer.md and follow it exactly
-   for PR #<n>, change <change>. Post the review with gh pr review <n> --comment
-   and comment the verdict on the ticket. Do not read any implementer notes.
-   Reply with the review exactly as posted.
+   You are actor reviewer. Read .agents/review/briefs/pr-<n>.md first: it
+   names the PR and the change. Then read .agents/review/reviewer.md and
+   follow it exactly for PR #<n>, change <change>. Post the review with
+   gh pr review <n> --comment and comment the verdict on the ticket. Do not
+   read any implementer notes. Reply with the review exactly as posted.
    ```
 
    Then check it was posted: `gh pr view <n> --json reviews` and
    `agentboard show <id>`.
+
+   If the configured reviewer fails twice, block the ticket for a human with
+   a comment (`agentboard comment <id> "Reviewer failed twice: <error>. Needs
+   a human." --as orch`, then `agentboard move <id> blocked --as orch`).
+   Never substitute a reviewer of your own choosing: no `default` agent, no
+   model you pick yourself.
 
 8. **On `VERDICT: CHANGES` (or a failed verify).**
    - `agentboard comment <id> "Send-back round <k>: <findings>" --as orch`
@@ -144,6 +181,11 @@ from whatever it was.
      agentboard move <id> merged --as orch
      agentboard close-merged --as orch
      ```
+     A squash merge drops the branch and the shas the PR body's image links
+     name. Rewrite each image URL to the merge sha
+     (`blob/<merge sha>/evidence/...png?raw=true`) with
+     `gh pr edit <n> --body-file <file>`, and check each returns 200 with
+     `curl -sIL`.
    - Clean up from the main checkout:
      ```
      git -C <repo> pull --ff-only
@@ -181,7 +223,11 @@ from whatever it was.
     synced specs under `openspec/specs/`, commit on main with a message
     that says why, and push (the pre-push gate runs).
 
-13. **Record the cost.** From the repository folder (for example
+13. **Record the cost.** With Codex, cost comes from the OpenRouter usage
+    lines in `.agents/loop/loop.log` (usage before and after each
+    iteration), not from the ledger, which reads Claude Code logs only and
+    prints $0 for a Codex run. Put the difference in the run's report. With
+    Claude Code, from the repository folder (for example
     `~/workshop/hop`), not from the workshop clone. The ledger finds the
     project from the current folder:
     ```
@@ -210,4 +256,6 @@ from whatever it was.
 - Never push to main yourself while a PR of the change is open. Each push
   puts every open PR behind main and costs it a rebase, new evidence and a
   fresh verify. Hold tooling and skill fixes until the last merge.
+- Never substitute a reviewer. If the configured reviewer fails twice,
+  block the ticket for a human.
 - Never use `--no-verify`.

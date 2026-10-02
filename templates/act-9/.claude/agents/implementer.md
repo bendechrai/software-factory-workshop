@@ -34,6 +34,10 @@ Rules:
   (`E2E_PORT=<port> git push ...`), because the pre-push gate runs the
   browser test.
 - Never use `--no-verify`. If a hook fails, fix the cause.
+- Write the PR body to a file (a quoted heredoc, `<<'EOF'`) and open the PR
+  with `gh pr create --body-file <file>`. Never put markdown with backticks
+  or apostrophes inside a shell string: the shell runs it as commands.
+- Link evidence images by commit sha, not branch name (the evidence skill).
 - Run every check after your last edit and quote the real exit code.
 
 Report back in exactly this format and nothing else:

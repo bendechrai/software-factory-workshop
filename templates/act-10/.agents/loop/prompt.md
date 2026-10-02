@@ -8,6 +8,10 @@ Use your harness's own subagent tool:
 
 The reviewer must run on a different model from the implementer. Do not review work with the model that wrote it.
 
+Before you spawn a reviewer, write its brief (PR number, change, head sha, what to read) to .agents/review/briefs/pr-<n>.md and as a ticket comment. The reviewer's spawn message may not reach it, so its prompt tells it to read that file first. If the configured reviewer fails twice, block the ticket for a human with a comment; never substitute a reviewer of your own choosing.
+
+Open every evidence screenshot with your image-reading tool and describe what it shows in a ticket comment before you accept it; pixel sizes are not a check. Spawn implementers with a fresh context (Codex: not fork_turns all; pass the brief only). With Codex, report cost from the OpenRouter usage lines in .agents/loop/loop.log, not the ledger.
+
 Merge on the human's behalf only after a review PASS and a green preflight, and say so on the ticket (for example: "Merged by the orchestrator on the human's behalf: review PASS, preflight green").
 
 When you finish, print a one-paragraph summary on stdout: what you did, what you merged or blocked, and what is left on the board.
