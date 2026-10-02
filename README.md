@@ -1,0 +1,50 @@
+# Build your own software factory
+
+A two-day, hands-on workshop guide. It takes you from vibe coding to an autonomous orchestrator around your coding harness.
+
+Read it here: https://bendechrai.github.io/software-factory-workshop/
+
+## Who it is for
+
+Developers who already use a coding agent and want to go further. You should be comfortable with git, Node.js and a terminal. Claude Code is the worked path. Codex CLI, Gemini CLI and Cursor have tabs on the steps that differ.
+
+## The ten acts
+
+| Act | Idea | Link |
+|---|---|---|
+| 1. The sandbox and the vibe | One sentence to an agent gives you an app that differs every run. | [Act 1](https://bendechrai.github.io/software-factory-workshop/day-1/act-1-the-sandbox-and-the-vibe/) |
+| 2. Guardrails | An instructions file and a skill say how work is done here. | [Act 2](https://bendechrai.github.io/software-factory-workshop/day-1/act-2-guardrails/) |
+| 3. Gates | Git hooks that the agent cannot argue with. | [Act 3](https://bendechrai.github.io/software-factory-workshop/day-1/act-3-gates/) |
+| 4. Specifications | Write down what to build before the agent builds it. | [Act 4](https://bendechrai.github.io/software-factory-workshop/day-1/act-4-specifications/) |
+| 5. Tickets | A board on disk that survives a context reset. | [Act 5](https://bendechrai.github.io/software-factory-workshop/day-2/act-5-tickets/) |
+| 6. Isolation | One worktree, branch and pull request per ticket. | [Act 6](https://bendechrai.github.io/software-factory-workshop/day-2/act-6-isolation/) |
+| 7. Proof | Work is done when it shows evidence, not a claim. | [Act 7](https://bendechrai.github.io/software-factory-workshop/day-2/act-7-proof/) |
+| 8. Review | The writer never grades its own work. | [Act 8](https://bendechrai.github.io/software-factory-workshop/day-2/act-8-review/) |
+| 9. The orchestrator | One session dispatches the tickets and checks every report. | [Act 9](https://bendechrai.github.io/software-factory-workshop/day-2/act-9-the-orchestrator/) |
+| 10. Unattended | A guarded loop runs the factory while you are away. | [Act 10](https://bendechrai.github.io/software-factory-workshop/day-2/act-10-unattended/) |
+
+## Layout
+
+| Path | What it holds |
+|---|---|
+| `docs/` | The Starlight site. Pages are in `docs/src/content/docs/`. |
+| `templates/act-N/` | The files attendees copy for each act. |
+| `tools/ledger/` | A script that adds up what each act cost. |
+| `bin/check-setup.sh` | Checks your machine before you arrive. |
+| `research/` | Notes, demo run logs and walkthrough reports behind the pages. |
+| `demo/vibe/` | Three one-prompt builds of the demo app, kept as Act 1 evidence. |
+
+The demo app lives in its own public repository, [hop-demo](https://github.com/bendechrai/hop-demo), with a tag per act. It is not part of this repository.
+
+## Run the site locally
+
+```bash
+cd docs && npm install && npm run dev
+```
+
+## Status
+
+- Every hands-on step was run on the demo app with Claude Code. Then it was walked through literally from clean folders. There were two walkthroughs, and the defects they found are fixed.
+- The Codex, Gemini and Cursor tabs are written from their docs. They were not run.
+- The act 10 loop is tested against a fake harness only.
+- agentboard is installed from npm as `@bendechrai/agentboard`.

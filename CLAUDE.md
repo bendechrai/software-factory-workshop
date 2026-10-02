@@ -16,5 +16,8 @@ A two-day workshop, published as an Astro Starlight site in `docs/`, that takes 
 |---|---|
 | `docs/` | The Starlight site. Pages in `docs/src/content/docs/`. |
 | `demo/vibe/` | Three one-prompt builds of the demo app, kept as Act 1 evidence. |
-| `demo/hop/` | The demo app built through the acts, with a git tag per act. |
-| `templates/` | The files attendees copy: AGENTS.md, skills, hooks, scripts. |
+| `demo/hop/` | The demo app built through the acts, with a git tag per act. Its own repository (https://github.com/bendechrai/hop-demo), gitignored here. |
+| `tools/ledger/` | The cost ledger script, its tests and the price table. |
+| `research/` | Demo run logs, walkthrough reports and landscape notes behind the pages. |
+| `bin/check-setup.sh` | The pre-arrival setup check. |
+| `templates/` | The files attendees copy, one folder per act: `templates/act-N/`. |
