@@ -42,12 +42,14 @@ The other two files are `proposal.md` (why, what changes, impact) and `design.md
 
 <Steps>
 
-1. **Install OpenSpec.** Run this in your `hop` repository. It needs no global install.
+1. **Install OpenSpec.** Run this from your hop folder. The skills it writes call a bare `openspec` command, so `openspec` must be on your PATH (you installed it globally on the [Before you arrive](/software-factory-workshop/start/before-you-arrive/) page). Check with `openspec --version`.
 
    ```bash
-   cd hop
-   npx -y @fission-ai/openspec@latest init --tools claude --no-animation
+   openspec --version
+   openspec init --tools claude --no-animation
    ```
+
+   Without a global install, `npx -y @fission-ai/openspec@latest init --tools claude --no-animation` also works for this step, but the skills will not find `openspec` later.
 
    `--tools` takes a comma separated list from `claude`, `codex`, `gemini` and `cursor`. Pass all four if your team uses more than one: `--tools claude,codex,gemini,cursor`.
 
@@ -66,7 +68,13 @@ The other two files are `proposal.md` (why, what changes, impact) and `design.md
 
    Restart your harness so it sees the new skills and commands.
 
-2. **Write the project context.** Open `openspec/config.yaml` and fill in `context:` with the constraints an agent cannot infer. The file above shows what the demo used: the three layers, the migration rule, the definition of done, the test conventions and the writing style. Leave out anything obvious from reading the code. A short context is read. A long one is skimmed.
+2. **Write the project context.** Download the demo config over the one `init` made, then adapt the context to your app.
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/bendechrai/software-factory-workshop/main/templates/act-4/openspec/config.yaml -o openspec/config.yaml
+   ```
+
+   Open `openspec/config.yaml` and edit `context:` so it holds the constraints an agent cannot infer. The file above shows what the demo used: the three layers, the migration rule, the definition of done, the test conventions and the writing style. Leave out anything obvious from reading the code. A short context is read. A long one is skimmed.
 
 3. **Start a proposal.** This is the step that differs per harness. Give it the idea, word for word.
 
@@ -99,7 +107,7 @@ The other two files are `proposal.md` (why, what changes, impact) and `design.md
 4. **Validate the change.** This is a deterministic check on the format, not a model's opinion.
 
    ```bash
-   npx -y @fission-ai/openspec@latest validate link-expiry
+   openspec validate link-expiry
    ```
 
    The demo run printed `Change 'link-expiry' is valid`.
@@ -124,7 +132,7 @@ The other two files are `proposal.md` (why, what changes, impact) and `design.md
      </TabItem>
      <TabItem label="Codex CLI">
        ```text
-       $openspec-apply
+       $openspec-apply-change
        ```
      </TabItem>
      <TabItem label="Gemini CLI">
@@ -153,7 +161,7 @@ The other two files are `proposal.md` (why, what changes, impact) and `design.md
      </TabItem>
      <TabItem label="Codex CLI">
        ```text
-       $openspec-archive
+       $openspec-archive-change
        ```
      </TabItem>
      <TabItem label="Gemini CLI">
@@ -168,13 +176,14 @@ The other two files are `proposal.md` (why, what changes, impact) and `design.md
      </TabItem>
    </Tabs>
 
-   Two things happen. The delta is synced into `openspec/specs/link-expiry/spec.md`: the title becomes `# link-expiry Specification` and `## ADDED Requirements` becomes `## Requirements`. Then the change folder is moved to `openspec/changes/archive/2026-10-01-link-expiry/`. `openspec/changes/` is left with no active change.
+   Two things happen. The delta is synced into `openspec/specs/link-expiry/spec.md`: the title becomes `# link-expiry Specification` and `## ADDED Requirements` becomes `## Requirements`. Then the change folder is moved to `openspec/changes/archive/`, into a folder named with today's date, such as `2026-10-01-link-expiry/`. `openspec/changes/` is left with no active change.
 
    Why this matters: the main spec is the current truth, and the archive is the history. Without archiving you end up with a pile of plans and no answer to "what does the system do now?".
 
-9. **Check, then tag.**
+9. **Commit, check, then tag.** Preflight tests `HEAD`, so commit the apply and archive work first.
 
    ```bash
+   git add -A && git commit -m "Archive link-expiry"
    bin/preflight.sh HEAD
    git tag act-4
    ```
@@ -185,7 +194,7 @@ The other two files are `proposal.md` (why, what changes, impact) and `design.md
 
 On the demo run the agent produced all four artifacts in one pass, and `openspec validate link-expiry` passed. `tasks.md` had 4 groups and 14 tasks, each naming files and how to verify it.
 
-After "Looks right. Apply it." the agent ticked all 14 boxes. It added migration `002` and never edited `001`. It put the expiry rule in one file, `src/actions/is-expired.ts`, added a 410 page and wrote two browser scenarios. The end-to-end database moved from memory to a throwaway file, so a test can plant an already-expired link through the real service. 31 unit tests and 4 browser scenarios passed. Preflight passed. The commit was 27 files, +394 and -49.
+After "Looks right. Apply it." the agent ticked all 14 boxes. It added migration `002` and never edited `001`. It put the expiry rule in one file, `src/actions/is-expired.ts`, added a 410 page and wrote two browser scenarios. The end-to-end database moved from memory to a throwaway file, so a test can plant an already-expired link through the real service. 31 unit tests and 4 browser scenarios passed. Preflight passed. The commit was 27 files, +394 and -49. These are the demo's numbers. Your numbers will differ.
 
 The one deviation was task 3.4, described in step 7. The agent reported it, and the spec still matched what shipped.
 

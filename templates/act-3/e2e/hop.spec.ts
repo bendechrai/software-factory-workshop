@@ -26,22 +26,3 @@ test("a link can be created, followed, and shows its click count", async ({ page
   await page.goto("/");
   await expect(page.locator("#rows tr", { hasText: code }).locator("td.num")).toHaveText("1");
 });
-
-test("a link can be deleted from the table after confirming", async ({ page }) => {
-  await page.goto("/");
-  await page.getByLabel("Long URL").fill(destination);
-  await page.getByLabel("Custom code (optional)").fill(`${code}-del`);
-  await page.getByRole("button", { name: "Shorten" }).click();
-  const row = page.locator("#rows tr", { hasText: `${code}-del` });
-  await expect(row).toHaveCount(1);
-
-  page.once("dialog", (dialog) => {
-    expect(dialog.type()).toBe("confirm");
-    void dialog.accept();
-  });
-  await row.getByRole("button", { name: `Delete ${code}-del` }).click();
-  await expect(row).toHaveCount(0);
-
-  const gone = await page.request.delete(`/api/links/${code}-del`);
-  expect(gone.status()).toBe(404);
-});

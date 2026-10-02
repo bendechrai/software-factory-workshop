@@ -32,7 +32,7 @@ if ls "${HOME}/Library/Caches/ms-playwright" "${HOME}/.cache/ms-playwright" 2>/d
   ok playwright "chromium is installed"
 else miss playwright "run: npx -y playwright@latest install chromium"; fi
 
-if npx -y @fission-ai/openspec@latest --version >/dev/null 2>&1; then ok openspec "npx @fission-ai/openspec"; else miss openspec "npx -y @fission-ai/openspec@latest --version failed"; fi
+if command -v openspec >/dev/null 2>&1; then ok openspec "$(openspec --version 2>/dev/null | head -1)"; else miss openspec "run: npm install -g @fission-ai/openspec@latest"; fi
 
 if command -v agentboard >/dev/null 2>&1; then ok agentboard "$(agentboard version 2>/dev/null | head -1)"
 elif npx -y @bendechrai/agentboard@latest version >/dev/null 2>&1; then ok agentboard "npx @bendechrai/agentboard"

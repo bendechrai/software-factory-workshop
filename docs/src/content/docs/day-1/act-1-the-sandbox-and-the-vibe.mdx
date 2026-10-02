@@ -24,10 +24,10 @@ Three things to say before anyone types.
 
 <Steps>
 
-1. **Make an empty folder and start your sandboxed harness in it.** You set the alias up in [Before you arrive](/software-factory-workshop/start/before-you-arrive/).
+1. **Make an empty folder and start your sandboxed harness in it.** You set the alias up in [Before you arrive](/software-factory-workshop/start/before-you-arrive/). The `hop` folder sits next to `software-factory-workshop`, both inside `~/workshop`. The ledger path in step 2 (`../software-factory-workshop/tools/ledger/ledger.mjs`) depends on that.
 
    ```bash
-   mkdir hop && cd hop
+   cd ~/workshop && mkdir hop && cd hop
    git init -b main
    ```
 
@@ -58,7 +58,7 @@ Three things to say before anyone types.
      </TabItem>
    </Tabs>
 
-2. **Start counting the cost.** Open a second terminal in your `hop` folder. You cloned the workshop repository on the [Before you arrive](/software-factory-workshop/start/before-you-arrive/) page, so the ledger is already on your machine. Run it from `hop`. It finds your project from the current folder.
+2. **Start counting the cost.** Open a second terminal and `cd ~/workshop/hop`. You cloned the workshop repository on the [Before you arrive](/software-factory-workshop/start/before-you-arrive/) page, so the ledger is already on your machine. Run it from `hop`. It finds your project from the current folder.
 
    The ledger reads your harness's own local logs and shows tokens and API-equivalent cost by model. Nothing is sent anywhere. Run it again at the end of each act and watch the number move.
 
@@ -94,18 +94,19 @@ Three things to say before anyone types.
 
 4. **When it says it is done, run it and try it.** Paste a link, click the short one, and check the count went up. If it does not work, tell the agent so and let it fix it. Note how many turns that took.
 
-5. **Commit what you have and tag it.** You will come back to this point.
+5. **Take a screenshot of the home page.** Start the app first, and leave it running. Playwright can take the screenshot from the command line; replace the port with yours. Do this before you commit, so the screenshot is part of the commit.
 
    ```bash
+   npx -y playwright@latest screenshot --viewport-size=1280,800 http://localhost:3000 screenshot.png
+   ```
+
+6. **Commit what you have and tag it.** You will come back to this point. Stop the app, then look at `git status` first. If you see `node_modules` or a database file (such as `hop.db`) listed, and the agent did not add a `.gitignore`, create one that lists them before you commit.
+
+   ```bash
+   git status
    git add -A
    git commit -m "Vibe-coded hop from one prompt"
    git tag act-1
-   ```
-
-6. **Take a screenshot of the home page.** Playwright can do it from the command line; replace the port with yours.
-
-   ```bash
-   npx playwright screenshot --viewport-size=1280,800 http://localhost:3000 screenshot.png
    ```
 
 </Steps>

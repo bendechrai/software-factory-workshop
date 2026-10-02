@@ -35,10 +35,9 @@ The code-structure skill. Three layers, with a table of what each one owns and n
 
 <Steps>
 
-1. **Copy the two files into your `hop` folder, and tell your harness about them.** The skill lives in `.agents/skills/`, which three of the four harnesses read. Claude Code gets a symbolic link.
+1. **Copy the two files into your `hop` folder, and tell your harness about them.** Run these from your hop folder. The skill lives in `.agents/skills/`, which three of the four harnesses read. Claude Code gets a symbolic link.
 
    ```bash
-   cd hop
    curl -fsSL https://raw.githubusercontent.com/bendechrai/software-factory-workshop/main/templates/act-2/AGENTS.md -o AGENTS.md
    mkdir -p .agents/skills/code-structure
    curl -fsSL https://raw.githubusercontent.com/bendechrai/software-factory-workshop/main/templates/act-2/.agents/skills/code-structure/SKILL.md -o .agents/skills/code-structure/SKILL.md
@@ -57,7 +56,7 @@ The code-structure skill. Three layers, with a table of what each one owns and n
      <TabItem label="Gemini CLI">
        ```bash
        mkdir -p .gemini
-       printf '{\n  "context": { "fileName": ["AGENTS.md", "GEMINI.md"] }\n}\n' > .gemini/settings.json
+       curl -fsSL https://raw.githubusercontent.com/bendechrai/software-factory-workshop/main/templates/act-2/.gemini/settings.json -o .gemini/settings.json
        ```
        Commit that file. It tells Gemini to read `AGENTS.md`; `.agents/skills/` is read without a setting.
      </TabItem>
@@ -75,8 +74,10 @@ The code-structure skill. Three layers, with a table of what each one owns and n
 3. **First prompt: bring the vibe-coded app into line.** This is the part most people skip. Guardrails only apply to new code unless you say otherwise.
 
    ```text
-   Read AGENTS.md and the code-structure skill. Bring this codebase in line with them without changing what the app does: TypeScript, the three layers, numbered SQL migrations applied by `npm run migrate`, and an `npm run verify` that runs typecheck, lint and the unit tests. Keep the existing tests passing (port them to TypeScript if you need to). Add a `.env.example` for the variables the app reads.
+   Read AGENTS.md and the code-structure skill. Bring this codebase in line with them without changing what the app does: TypeScript, the three layers, numbered SQL migrations applied by `npm run migrate`, and an `npm run verify` that runs typecheck, lint and the unit tests. Keep the existing tests passing (port them to TypeScript if you need to). Add a `.env.example` for the variables the app reads. Run TypeScript directly with Node, no build step. The server entry point is src/server.ts and reads PORT and HOP_DB (HOP_DB=:memory: must work). The server applies pending migrations when it starts.
    ```
+
+   The last three sentences are a contract that the browser test in act 3 depends on. Guardrails are also how a team's apps converge: if every app starts the same way, one test can start any of them.
 
    Let it finish. Run `npm run verify` yourself. Commit.
 

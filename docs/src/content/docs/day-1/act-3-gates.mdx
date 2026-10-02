@@ -40,24 +40,26 @@ The harness hook that stops an agent skipping the git hooks:
 
 <Steps>
 
-1. **Copy the gate files in.** The template folder has the definition of done, both git hooks, the preflight script, the setup script, the harness hook, a Playwright config and a browser test for hop.
+1. **Copy the gate files in.** Run this from your hop folder. The template folder has the definition of done, both git hooks, the preflight script, the setup script, the harness hook, a Playwright config and a browser test for hop.
 
    ```bash
-   cd hop
    base=https://raw.githubusercontent.com/bendechrai/software-factory-workshop/main/templates/act-3
    mkdir -p .githooks bin .agents/hooks e2e
    for f in DEFINITION_OF_DONE.md .githooks/pre-commit .githooks/pre-push bin/preflight.sh bin/setup-git-hooks.sh .agents/hooks/block-no-verify.sh playwright.config.ts e2e/hop.spec.ts; do
      curl -fsSL "$base/$f" -o "$f"
    done
    curl -fsSL "$base/AGENTS-additions.md" | sed '1d' >> AGENTS.md
-   bin/setup-git-hooks.sh
+   bash bin/setup-git-hooks.sh
    ```
+
+   Files downloaded with `curl` do not keep their execute permission, which is why the script is run with `bash`. It then makes the hooks and scripts executable for you. The Claude Code hook in the next step is also run through `bash` for the same reason.
 
 2. **Wire the harness hook.** This is the one step that differs per harness.
 
    <Tabs syncKey="harness">
      <TabItem label="Claude Code">
        ```bash
+       base=https://raw.githubusercontent.com/bendechrai/software-factory-workshop/main/templates/act-3
        mkdir -p .claude
        curl -fsSL "$base/.claude/settings.json" -o .claude/settings.json
        ```
@@ -93,11 +95,11 @@ The harness hook that stops an agent skipping the git hooks:
 3. **Ask the agent to finish the wiring.** The browser test needs Playwright in the project and a script to run it.
 
    ```text
-   Install the gates. Read DEFINITION_OF_DONE.md. Add @playwright/test as a dev dependency and an `npm run e2e` script that runs it; the config and test are already in playwright.config.ts and e2e/hop.spec.ts. Add test-results/ and playwright-report/ to .gitignore. Then prove the gates work without committing: run `.githooks/pre-commit` directly and `bin/preflight.sh HEAD` directly, and show me the tail of each. Then commit.
+   Install the gates. Read DEFINITION_OF_DONE.md. Add @playwright/test as a dev dependency and an `npm run e2e` script that runs it; the config and test are already in playwright.config.ts and e2e/hop.spec.ts. Add test-results/ and playwright-report/ to .gitignore. The browser test in e2e/hop.spec.ts was written for another copy of this app. Keep its scenario (create a link with a custom code from the form, see it in the table, follow it, see the click count rise) and change its selectors to match this app's page. Use labels and roles, not CSS classes, where you can. Make sure lint and typecheck either cover or deliberately exclude e2e/ and playwright.config.ts. Then prove the gates work without committing: run `.githooks/pre-commit` directly and `bin/preflight.sh HEAD` directly, and show me the tail of each. Then commit.
    ```
 
    <Aside type="tip" title="What you should see">
-   The direct run of preflight **fails** at the e2e gate with `Missing script: "e2e"`. That is correct. Preflight tests `HEAD`, and `HEAD` is still your act 2 commit, which has no `e2e` script. The uncommitted files in your working tree cannot make it pass. After the commit, `bin/preflight.sh HEAD` passes, with a timing table that looks like this on the demo app:
+   The direct run of preflight **fails** at the e2e gate with `Missing script: "e2e"`. That is correct. Preflight tests `HEAD`, and `HEAD` is still your act 2 commit, which has no `e2e` script. The uncommitted files in your working tree cannot make it pass. After the commit, `bin/preflight.sh HEAD` passes once the browser test matches your page. If the e2e gate fails, read the Playwright error. It is usually a selector that does not match your page. A passing run has a timing table that looks like this on the demo app:
 
    ```text
    PREFLIGHT PASSED - bdf4ee5 is safe to push

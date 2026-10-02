@@ -74,15 +74,20 @@ Do this the day before. It takes about twenty minutes, most of it waiting on dow
    The Chromium download is about 360 MB. It took over 30 minutes on a slow connection while this guide was being written, so install it the day before.
    </Aside>
 
-6. **OpenSpec and agentboard.** Both are run with `npx`, so there is nothing to install. Running them once now caches the download.
+6. **OpenSpec and agentboard.** OpenSpec is installed globally, because the skills it writes into your project call a bare `openspec` command. agentboard is run with `npx`, and running it once now caches the download.
 
    ```bash
-   npx -y @fission-ai/openspec@latest --version
+   npm install -g @fission-ai/openspec@latest
+   openspec --version
    npx -y @bendechrai/agentboard@latest version
    ```
 
    <Aside type="note">
    agentboard is published from https://github.com/bendechrai/agentboard. If the `npx` command cannot find the package, clone that repository, run `npm ci && npm run build && npm link`, and the `agentboard` command is on your path. The commands in this guide are the same either way.
+   </Aside>
+
+   <Aside type="caution" title="If the agentboard command fails">
+   If `npx -y @bendechrai/agentboard@latest version` fails, carry on. agentboard is needed only from act 5, and the presenter will give you the install link on the day.
    </Aside>
 
    <Aside type="note">
@@ -137,12 +142,12 @@ Put the alias in your shell profile so it survives a new terminal. Everywhere th
 
 ## Check everything at once
 
-Clone the workshop repository and run the check script. It prints one line per tool.
+Make one folder for the whole workshop, clone the workshop repository into it, and run the check script from there. It prints one line per tool. Your `hop` app goes in the same folder in act 1, next to the clone.
 
 ```bash
+mkdir -p ~/workshop && cd ~/workshop
 git clone https://github.com/bendechrai/software-factory-workshop.git
-cd software-factory-workshop
-bin/check-setup.sh
+software-factory-workshop/bin/check-setup.sh
 ```
 
 If every line says `ok`, you are ready.

@@ -5,6 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 git config core.hooksPath .githooks
 chmod +x .githooks/* bin/*.sh
+if [ -d .agents/hooks ]; then chmod +x .agents/hooks/*.sh; fi
 echo "core.hooksPath -> .githooks"
 echo "  pre-commit  gitleaks on the staged changes, then npm run verify"
 echo "  pre-push    bin/preflight.sh on every commit being pushed"
